@@ -34,3 +34,15 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+### Vercel setup (quick)
+
+1. Create a Vercel account and import this repository.
+2. In your Vercel Project Settings -> Environment Variables, add the keys from `.env.example` as `NEXT_PUBLIC_*` variables and set their values from your Firebase console.
+3. Select the `main` branch (or the branch you deploy) and deploy. Vercel will run `npm run build` by default.
+
+Notes:
+- Keep any server-side Firebase service account JSON out of `NEXT_PUBLIC_` variables; instead set it as a secret (e.g., `FIREBASE_SERVICE_ACCOUNT_JSON`) and read it only in server code.
+- If you need custom build or routes, add a `vercel.json` file (an example is included in the repo).
+
+If you want me to add a scripted migration for existing Firestore documents (e.g., to normalize price-per-head fields), I can add a Node script and README instructions to run it from your environment.

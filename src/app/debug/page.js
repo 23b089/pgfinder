@@ -161,7 +161,7 @@ export default function DebugPage() {
               <div className="text-center py-8 text-gray-500">
                 <Database className="w-12 h-12 mx-auto mb-4 text-gray-300" />
                 <p>No users found in localStorage</p>
-                <p className="text-sm">Click "Create Test Accounts" to add test users</p>
+                <p className="text-sm">Click &quot;Create Test Accounts&quot; to add test users</p>
               </div>
             ) : (
               <div className="space-y-4">
