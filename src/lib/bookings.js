@@ -166,7 +166,7 @@ export const markMonthlyPaymentPaid = async (bookingId, monthString, ownerId) =>
   }
 };
 
-// Create a new booking (pending). Availability is not changed here. Owner must accept to reserve.
+// Create a new booking (start as pending). Owner must accept to confirm.
 export const createBooking = async (bookingData) => {
   try {
     // Reserve a slot at booking time using a transaction to avoid overbooking.
@@ -207,15 +207,15 @@ export const createBooking = async (bookingData) => {
         updatedAt: serverTimestamp()
       });
 
-      // Create booking as confirmed (slot reserved)
+      // Create booking as pending (owner must accept)
       const booking = {
         ...bookingData,
         occupants: occupantCount,
-        status: 'confirmed',
+        status: 'pending', // FIX: bookings now start as pending
         paymentStatus: 'pending',
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
-        confirmedAt: serverTimestamp(),
+        // confirmedAt is only set when owner accepts
         dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
         rentAmount: bookingData.rentAmount || 0,
         securityDeposit: bookingData.securityDeposit || 0,
@@ -225,24 +225,22 @@ export const createBooking = async (bookingData) => {
       transaction.set(bookingRef, booking);
     });
 
-    // Notify owner about new confirmed booking
+    // Notify owner about new booking request
     try {
-      // read booking to get owner id
       const bookingDoc = await getDoc(bookingRef);
       const booking = bookingDoc.exists() ? bookingDoc.data() : null;
       if (booking) {
         await createNotification({
           userId: booking.ownerId,
           type: 'new_booking',
-          title: 'New Booking',
-          message: `${booking.userName} has booked ${booking.propertyName || booking.pgName}.`,
+          title: 'New Booking Request',
+          message: `${booking.userName} has requested to book ${booking.propertyName || booking.pgName}.`,
           bookingId,
           propertyId: booking.propertyId,
           isRead: false
         });
       }
     } catch (nErr) {
-      // non-fatal
       console.error('Failed to notify owner of new booking:', nErr);
     }
 
@@ -366,7 +364,6 @@ export const getUserFavorites = async (userId) => {
 // Get bookings for a user
 export const getUserBookings = async (userId) => {
   try {
-    // Avoid server-side orderBy to prevent composite index requirement in dev.
     const q = query(
       collection(db, 'bookings'),
       where('userId', '==', userId)
@@ -378,7 +375,6 @@ export const getUserBookings = async (userId) => {
       bookings.push({ id: docSnap.id, ...docSnap.data() });
     });
 
-    // Sort client-side by createdAt (descending). Handle Firestore Timestamps and ISO strings.
     const toMillis = (ts) => {
       if (!ts) return 0;
       if (typeof ts === 'object' && typeof ts.toMillis === 'function') return ts.toMillis();
@@ -453,13 +449,11 @@ export const cancelBooking = async (bookingId, userId) => {
         await updateRoomAvailability(booking.propertyId, 'cancel', occupantCount);
       } catch (err) {
         console.error('Failed to update room availability on cancel:', err);
-        // continue; not fatal
       }
     }
 
     await updateDoc(bookingRef, { status: 'cancelled', updatedAt: serverTimestamp(), cancelledAt: serverTimestamp() });
 
-    // Notify owner
     await createNotification({
       userId: booking.ownerId,
       type: 'booking_cancelled',
@@ -487,7 +481,6 @@ export const submitReview = async (bookingId, userId, text, rating) => {
     const booking = bookingDoc.data();
     if (booking.userId !== userId) return { success: false, error: 'Unauthorized' };
 
-    // Attach review to booking
     const reviewEntry = {
       userId,
       text,
@@ -497,7 +490,6 @@ export const submitReview = async (bookingId, userId, text, rating) => {
 
     await updateDoc(bookingRef, { review: reviewEntry, updatedAt: serverTimestamp() });
 
-    // Optionally, add review to property document's reviews array (best-effort)
     try {
       const propRef = doc(db, 'pg_listings', booking.propertyId);
       const propDoc = await getDoc(propRef);
@@ -511,7 +503,6 @@ export const submitReview = async (bookingId, userId, text, rating) => {
       console.error('Failed to attach review to property:', propErr);
     }
 
-    // Notify owner
     await createNotification({
       userId: booking.ownerId,
       type: 'new_review',
@@ -532,7 +523,6 @@ export const submitReview = async (bookingId, userId, text, rating) => {
 // Get bookings for an owner
 export const getOwnerBookings = async (ownerId) => {
   try {
-    // Avoid server-side orderBy to prevent composite index requirement in dev.
     const q = query(
       collection(db, 'bookings'),
       where('ownerId', '==', ownerId)
@@ -542,7 +532,6 @@ export const getOwnerBookings = async (ownerId) => {
     const bookings = [];
     snapshot.forEach(docSnap => bookings.push({ id: docSnap.id, ...docSnap.data() }));
 
-    // Sort client-side by createdAt (descending). Handle Firestore Timestamps and ISO strings.
     const toMillis = (ts) => {
       if (!ts) return 0;
       if (typeof ts === 'object' && typeof ts.toMillis === 'function') return ts.toMillis();
@@ -560,38 +549,27 @@ export const getOwnerBookings = async (ownerId) => {
   }
 };
 
-// Owner accepts a booking: atomically reserve a room and confirm booking
+// Owner accepts a booking (confirms it)
 export const acceptBooking = async (bookingId, ownerId) => {
   try {
     const bookingRef = doc(db, 'bookings', bookingId);
-
-    // Only confirm bookings that are still pending. createBooking now reserves slots and marks booking confirmed.
     const bookingDoc = await getDoc(bookingRef);
-    if (!bookingDoc.exists()) throw new Error('Booking not found');
+    if (!bookingDoc.exists()) return { success: false, error: 'Booking not found' };
+
     const booking = bookingDoc.data();
+    if (booking.ownerId !== ownerId) return { success: false, error: 'Unauthorized' };
 
-    if (booking.ownerId !== ownerId) throw new Error('Unauthorized');
-
-    if (((booking.status || '') + '').toLowerCase() === 'confirmed') {
-      // Already confirmed (possibly reserved at create time). Nothing to do.
-      return { success: true };
-    }
-
-    // If booking is pending, mark as confirmed (no slot change here because createBooking should have reserved slots).
     await updateDoc(bookingRef, { status: 'confirmed', updatedAt: serverTimestamp(), confirmedAt: serverTimestamp() });
 
-    // Notify user (use the booking fetched earlier)
-    if (booking) {
-      await createNotification({
-        userId: booking.userId,
-        type: 'booking_confirmed',
-        title: 'Booking Confirmed',
-        message: `Your booking for ${booking.propertyName || booking.pgName} has been accepted by the owner.`,
-        bookingId,
-        propertyId: booking.propertyId,
-        isRead: false
-      });
-    }
+    await createNotification({
+      userId: booking.userId,
+      type: 'booking_accepted',
+      title: 'Booking Confirmed',
+      message: `Your booking for ${booking.propertyName || booking.pgName} has been confirmed by the owner.`,
+      bookingId,
+      propertyId: booking.propertyId,
+      isRead: false
+    });
 
     return { success: true };
   } catch (error) {
@@ -601,7 +579,7 @@ export const acceptBooking = async (bookingId, ownerId) => {
 };
 
 // Owner rejects a booking
-export const rejectBooking = async (bookingId, ownerId, reason = '') => {
+export const rejectBooking = async (bookingId, ownerId) => {
   try {
     const bookingRef = doc(db, 'bookings', bookingId);
     const bookingDoc = await getDoc(bookingRef);
@@ -610,26 +588,21 @@ export const rejectBooking = async (bookingId, ownerId, reason = '') => {
     const booking = bookingDoc.data();
     if (booking.ownerId !== ownerId) return { success: false, error: 'Unauthorized' };
 
-    // If booking was confirmed, release the slot(s)
-    if (((booking.status || '') + '').toLowerCase() === 'confirmed') {
-      try {
-        const occupantCount = parseInt(booking.occupants || 1, 10);
-        await updateRoomAvailability(booking.propertyId, 'cancel', occupantCount);
-      } catch (err) {
-        console.error('Failed to update room availability on reject:', err);
-      }
+    await updateDoc(bookingRef, { status: 'rejected', updatedAt: serverTimestamp(), rejectedAt: serverTimestamp() });
+
+    // Release reserved slot
+    try {
+      const occupantCount = parseInt(booking.occupants || 1, 10);
+      await updateRoomAvailability(booking.propertyId, 'cancel', occupantCount);
+    } catch (err) {
+      console.error('Failed to update room availability on rejection:', err);
     }
 
-    await updateDoc(bookingRef, { status: 'rejected', rejectionReason: reason, updatedAt: serverTimestamp(), rejectedAt: serverTimestamp() });
-
-    // Optionally block user from rebooking this property? (not enforced here)
-
-    // Notify user
     await createNotification({
       userId: booking.userId,
       type: 'booking_rejected',
       title: 'Booking Rejected',
-      message: `Your booking for ${booking.propertyName || booking.pgName} was rejected. ${reason || ''}`,
+      message: `Your booking for ${booking.propertyName || booking.pgName} has been rejected by the owner.`,
       bookingId,
       propertyId: booking.propertyId,
       isRead: false
