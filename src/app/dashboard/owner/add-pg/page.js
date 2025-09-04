@@ -1,4 +1,4 @@
-'use client';
+`Example: NEXT_PUBLIC_FIREBASE_API_KEY=your_api_key_here`;'use client';
 import { useState } from 'react';
 import { 
   ArrowLeft, 
