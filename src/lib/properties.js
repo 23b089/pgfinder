@@ -49,9 +49,6 @@ export const addProperty = async (propertyData, ownerId) => {
       gender: propertyData.gender || 'Unisex',
       amenities: propertyData.amenities || []
     };
-    // Normalize Third-party service charge
-    property.tpServiceChargeType = propertyData.tpServiceChargeType || 'none';
-    property.tpServiceChargeValue = propertyData.tpServiceChargeType === 'none' ? 0 : (parseFloat(propertyData.tpServiceChargeValue) || 0);
 
     const docRef = await addDoc(collection(db, 'pg_listings'), property);
     

@@ -14,8 +14,8 @@ import {
   runTransaction
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { updateRoomAvailability } from './properties';
 import { writeBatch } from 'firebase/firestore';
+import { updateRoomAvailability } from './properties';
 
 // Create notification helper (used below)
 export const createNotification = async (notificationData) => {
@@ -161,31 +161,15 @@ export const createBooking = async (bookingData) => {
         updatedAt: serverTimestamp()
       });
 
-      // Compute third-party services charge per head, if configured
-      const tpType = (prop.tpServiceChargeType || 'none').toLowerCase();
-      const tpVal = parseFloat(prop.tpServiceChargeValue || 0) || 0;
-      const basePerHead = parseFloat(bookingData.rentAmount || 0) || 0;
-      let tpChargePerHead = 0;
-      if (tpType === 'percent' && tpVal > 0) {
-        tpChargePerHead = +(basePerHead * (tpVal / 100)).toFixed(2);
-      } else if (tpType === 'flat' && tpVal > 0) {
-        tpChargePerHead = +tpVal.toFixed(2);
-      }
-      const totalPerHead = +(basePerHead + tpChargePerHead).toFixed(2);
-
       // Create booking as pending (owner must accept)
       const booking = {
         ...bookingData,
         occupants: occupantCount,
-        status: 'pending', // bookings start as pending
+        status: 'pending', // FIX: bookings now start as pending
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
-        rentAmount: basePerHead,
-        tpServiceChargeType: tpType,
-        tpServiceChargeValue: tpVal,
-        tpChargePerHead,
-        totalPerHead,
-        // Payment tracking removed per request
+        rentAmount: bookingData.rentAmount || 0,
+        // Security deposit and other payment tracking removed per request
       };
 
       transaction.set(bookingRef, booking);
@@ -346,61 +330,6 @@ export const getUserNotifications = async (userId) => {
   }
 };
 
-// Delete a single notification (authorized by user)
-export const deleteNotification = async (notificationId, userId) => {
-  try {
-    const notifRef = doc(db, 'notifications', notificationId);
-    const notifSnap = await getDoc(notifRef);
-    if (!notifSnap.exists()) return { success: false, error: 'Notification not found' };
-    const notif = notifSnap.data();
-    if (notif.userId !== userId) return { success: false, error: 'Unauthorized' };
-    await deleteDoc(notifRef);
-    return { success: true };
-  } catch (error) {
-    console.error('Delete notification error:', error);
-    return { success: false, error: error.message };
-  }
-};
-
-// Delete multiple notifications by ids (authorized by user)
-export const deleteNotifications = async (notificationIds = [], userId) => {
-  try {
-    if (!Array.isArray(notificationIds) || notificationIds.length === 0) {
-      return { success: true };
-    }
-    const batch = writeBatch(db);
-    for (const id of notificationIds) {
-      const ref = doc(db, 'notifications', id);
-      const snap = await getDoc(ref);
-      if (snap.exists() && snap.data().userId === userId) {
-        batch.delete(ref);
-      }
-    }
-    await batch.commit();
-    return { success: true };
-  } catch (error) {
-    console.error('Batch delete notifications error:', error);
-    return { success: false, error: error.message };
-  }
-};
-
-// Delete all notifications for a user
-export const deleteAllNotificationsForUser = async (userId) => {
-  try {
-    const q = query(collection(db, 'notifications'), where('userId', '==', userId));
-    const snap = await getDocs(q);
-    const batch = writeBatch(db);
-    snap.forEach(docSnap => {
-      batch.delete(doc(db, 'notifications', docSnap.id));
-    });
-    await batch.commit();
-    return { success: true };
-  } catch (error) {
-    console.error('Delete all notifications error:', error);
-    return { success: false, error: error.message };
-  }
-};
-
 // Mark a notification as read
 export const markNotificationAsRead = async (notificationId, userId) => {
   try {
@@ -433,6 +362,62 @@ export const markNotificationAsUnread = async (notificationId, userId) => {
     return { success: true };
   } catch (error) {
     console.error('Mark notification unread error:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+// Delete a single notification (auth: must belong to userId)
+export const deleteNotification = async (notificationId, userId) => {
+  try {
+    const notifRef = doc(db, 'notifications', notificationId);
+    const notifDoc = await getDoc(notifRef);
+    if (!notifDoc.exists()) return { success: false, error: 'Notification not found' };
+
+    const notif = notifDoc.data();
+    if (notif.userId !== userId) return { success: false, error: 'Unauthorized' };
+
+    await deleteDoc(notifRef);
+    return { success: true };
+  } catch (error) {
+    console.error('Delete notification error:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+// Delete multiple notifications by IDs (auth: each must belong to userId)
+export const deleteNotifications = async (notificationIds = [], userId) => {
+  try {
+    if (!Array.isArray(notificationIds) || notificationIds.length === 0) {
+      return { success: true };
+    }
+    const batch = writeBatch(db);
+    for (const id of notificationIds) {
+      const ref = doc(db, 'notifications', id);
+      const snap = await getDoc(ref);
+      if (snap.exists() && snap.data().userId === userId) {
+        batch.delete(ref);
+      }
+    }
+    await batch.commit();
+    return { success: true };
+  } catch (error) {
+    console.error('Batch delete notifications error:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+// Delete all notifications for a user
+export const deleteAllNotificationsForUser = async (userId) => {
+  try {
+    const q = query(collection(db, 'notifications'), where('userId', '==', userId));
+    const snap = await getDocs(q);
+    if (snap.empty) return { success: true };
+    const batch = writeBatch(db);
+    snap.forEach(d => batch.delete(doc(db, 'notifications', d.id)));
+    await batch.commit();
+    return { success: true };
+  } catch (error) {
+    console.error('Delete all notifications error:', error);
     return { success: false, error: error.message };
   }
 };

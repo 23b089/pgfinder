@@ -130,13 +130,11 @@ export default function UserDashboard() {
 
       // Load user notifications
       const notificationsResult = await getUserNotifications(user.id);
-  if (notificationsResult.success) {
-    setNotifications(notificationsResult.notifications);
+      if (notificationsResult.success) {
+        setNotifications(notificationsResult.notifications);
   // compute unread count
   const unread = (notificationsResult.notifications || []).filter(n => !n.isRead).length;
   setUnreadCount(unread);
-    setSelectedNotifIds([]);
-    setSelectAllNotifs(false);
       }
     } catch (error) {
       console.error('Error loading user data:', error);
@@ -237,33 +235,35 @@ export default function UserDashboard() {
     setSelectedNotifIds(next ? notifications.map(n => n.id) : []);
   };
   const handleDeleteSelected = async () => {
-    if (!currentUser) return alert('Not authenticated');
-    if (selectedNotifIds.length === 0) return;
-    if (!confirm(`Delete ${selectedNotifIds.length} selected notification(s)?`)) return;
-    const res = await deleteNotifications(selectedNotifIds, currentUser.id);
-    if (res.success) {
-      const remaining = notifications.filter(n => !selectedNotifIds.includes(n.id));
-      setNotifications(remaining);
-      const unread = remaining.filter(n => !n.isRead).length;
-      setUnreadCount(unread);
-      setSelectedNotifIds([]);
-      setSelectAllNotifs(false);
-    } else {
-      alert(res.error || 'Failed to delete selected notifications');
+    try {
+      if (!currentUser) return alert('Not authenticated');
+      if (selectedNotifIds.length === 0) return;
+      const res = await deleteNotifications(selectedNotifIds, currentUser.id);
+      if (res.success) {
+        setNotifications(prev => prev.filter(n => !selectedNotifIds.includes(n.id)));
+        // update unread count
+        const deletedUnread = notifications.filter(n => selectedNotifIds.includes(n.id) && !n.isRead).length;
+        setUnreadCount(c => Math.max(0, c - deletedUnread));
+        setSelectedNotifIds([]);
+        setSelectAllNotifs(false);
+      }
+    } catch (err) {
+      console.error('Delete selected notifications error:', err);
     }
   };
   const handleDeleteAll = async () => {
-    if (!currentUser) return alert('Not authenticated');
-    if (notifications.length === 0) return;
-    if (!confirm('Delete ALL notifications? This cannot be undone.')) return;
-    const res = await deleteAllNotificationsForUser(currentUser.id);
-    if (res.success) {
-      setNotifications([]);
-      setUnreadCount(0);
-      setSelectedNotifIds([]);
-      setSelectAllNotifs(false);
-    } else {
-      alert(res.error || 'Failed to delete all notifications');
+    try {
+      if (!currentUser) return alert('Not authenticated');
+      if (notifications.length === 0) return;
+      const res = await deleteAllNotificationsForUser(currentUser.id);
+      if (res.success) {
+        setNotifications([]);
+        setUnreadCount(0);
+        setSelectedNotifIds([]);
+        setSelectAllNotifs(false);
+      }
+    } catch (err) {
+      console.error('Delete all notifications error:', err);
     }
   };
 
@@ -765,10 +765,7 @@ export default function UserDashboard() {
                           </div>
                           <div>
                             <p className="text-sm text-gray-600">Amount (per head)</p>
-                            <p className="font-medium">₹{(booking.totalPerHead ?? booking.rentAmount)?.toLocaleString?.() || (booking.totalPerHead ?? booking.rentAmount)} <span className="text-xs text-gray-500">/head</span></p>
-                            {booking.tpChargePerHead > 0 && (
-                              <p className="text-xs text-gray-500">Includes TP charge ₹{booking.tpChargePerHead} per head</p>
-                            )}
+                            <p className="font-medium">₹{booking.rentAmount?.toLocaleString?.() || booking.rentAmount} <span className="text-xs text-gray-500">/head</span></p>
                           </div>
                         </div>
 
@@ -831,36 +828,42 @@ export default function UserDashboard() {
             {/* Notifications Tab */}
             {activeTab === 'notifications' && (
               <div>
-                <h3 className="text-xl font-bold text-gray-800 mb-2">Notifications</h3>
-                {notifications.length > 0 && (
-                  <div className="flex items-center justify-between bg-white rounded-lg p-3 mb-3 border border-gray-200">
-                    <label className="inline-flex items-center gap-2 text-sm text-gray-700">
-                      <input type="checkbox" checked={selectAllNotifs} onChange={toggleSelectAllNotifs} className="w-4 h-4" />
-                      <span>Select all</span>
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <button onClick={handleDeleteSelected} disabled={selectedNotifIds.length === 0} className={`px-3 py-1.5 rounded-lg text-sm text-white ${selectedNotifIds.length === 0 ? 'bg-gray-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'}`}>Delete selected</button>
-                      <button onClick={handleDeleteAll} className="px-3 py-1.5 rounded-lg text-sm text-white bg-red-700 hover:bg-red-800">Delete all</button>
-                    </div>
-                  </div>
-                )}
+                <h3 className="text-xl font-bold text-gray-800 mb-4">Notifications</h3>
                 {notifications.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
                     <Bell className="w-12 h-12 mx-auto mb-4 text-gray-300" />
                     <p>No notifications yet.</p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center space-x-3">
+                        <label className="inline-flex items-center text-sm text-gray-700">
+                          <input type="checkbox" className="mr-2" checked={selectAllNotifs} onChange={toggleSelectAllNotifs} />
+                          Select all
+                        </label>
+                        <button onClick={handleDeleteSelected} disabled={selectedNotifIds.length === 0} className={`px-3 py-1 rounded-md text-sm ${selectedNotifIds.length ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-500 cursor-not-allowed'}`}>
+                          Delete selected
+                        </button>
+                      </div>
+                      <button onClick={handleDeleteAll} className="px-3 py-1 rounded-md text-sm bg-red-700 text-white">Delete all</button>
+                    </div>
+                    <div className="space-y-4">
                     {notifications.map((notification) => (
                       <div key={notification.id} className={`bg-gray-50 rounded-lg p-4 ${!notification.isRead ? 'border-l-4 border-indigo-500' : ''}`}>
                         <div className="flex items-start justify-between">
-                          <div className="flex items-start gap-3 flex-1">
-                            <input type="checkbox" className="mt-1 w-4 h-4" checked={selectedNotifIds.includes(notification.id)} onChange={() => toggleSelectNotif(notification.id)} />
-                            <div>
-                              <h4 className="font-semibold text-gray-800">{notification.title}</h4>
-                              <p className="text-sm text-gray-600 mt-1">{notification.message}</p>
-                              <p className="text-xs text-gray-500 mt-2">{new Date(notification.createdAt?.toDate()).toLocaleString()}</p>
+                          <div className="flex-1">
+                            <div className="mb-2">
+                              <label className="inline-flex items-center text-sm">
+                                <input type="checkbox" className="mr-2" checked={selectedNotifIds.includes(notification.id)} onChange={() => toggleSelectNotif(notification.id)} />
+                                Select
+                              </label>
                             </div>
+                            <h4 className="font-semibold text-gray-800">{notification.title}</h4>
+                            <p className="text-sm text-gray-600 mt-1">{notification.message}</p>
+                            <p className="text-xs text-gray-500 mt-2">
+                              {new Date(notification.createdAt?.toDate()).toLocaleString()}
+                            </p>
                           </div>
                           <div className="flex items-center space-x-2 ml-4">
                             {!notification.isRead && (
@@ -897,6 +900,8 @@ export default function UserDashboard() {
                         </div>
                       </div>
                     ))}
+                  </div>
+                  {/* close wrapper started above */}
                   </div>
                 )}
               </div>

@@ -27,26 +27,16 @@ export default function BookingPage() {
       const res = await getProperty(id);
       if (res.success) setProperty(res.property);
     })();
-    return () => {
-      if (typeof window !== 'undefined' && window.recaptchaVerifier) {
-        try { window.recaptchaVerifier.clear && window.recaptchaVerifier.clear(); } catch (_) {}
-        window.recaptchaVerifier = undefined;
-      }
-    };
   }, [id]);
 
-  // Initialize reCAPTCHA verifier robustly (clear stale instances/hot reload)
+  // Initialize reCAPTCHA verifier lazily
   const ensureRecaptcha = () => {
     if (typeof window === 'undefined') return null;
-    const containerId = 'recaptcha-container';
-    const container = document.getElementById(containerId);
-    if (!container) return null;
-    // Always clear any previous instance to avoid "client element removed" in dev/HMR
-    if (window.recaptchaVerifier) {
-      try { window.recaptchaVerifier.clear && window.recaptchaVerifier.clear(); } catch (_) {}
-      window.recaptchaVerifier = undefined;
+    if (!window.recaptchaVerifier) {
+      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        size: 'invisible'
+      });
     }
-    window.recaptchaVerifier = new RecaptchaVerifier(auth, containerId, { size: 'invisible' });
     return window.recaptchaVerifier;
   };
 

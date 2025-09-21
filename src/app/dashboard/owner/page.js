@@ -512,14 +512,7 @@ export default function OwnerDashboard() {
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{booking.propertyName}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{booking.roomType}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{new Date(booking.checkIn).toLocaleDateString()}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            <div className="flex flex-col">
-                              <span>₹{(booking.totalPerHead ?? booking.rentAmount)?.toLocaleString?.() || (booking.totalPerHead ?? booking.rentAmount)} <span className="text-xs text-gray-500">/head</span></span>
-                              {booking.tpChargePerHead > 0 && (
-                                <span className="text-xs text-gray-500">Base ₹{booking.rentAmount} + TP ₹{booking.tpChargePerHead}</span>
-                              )}
-                            </div>
-                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">₹{booking.rentAmount?.toLocaleString?.() || booking.rentAmount} <span className="text-xs text-gray-500">/head</span></td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                               booking.status === 'confirmed' 
