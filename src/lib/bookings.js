@@ -161,15 +161,31 @@ export const createBooking = async (bookingData) => {
         updatedAt: serverTimestamp()
       });
 
+      // Compute third-party services charge per head, if configured
+      const tpType = (prop.tpServiceChargeType || 'none').toLowerCase();
+      const tpVal = parseFloat(prop.tpServiceChargeValue || 0) || 0;
+      const basePerHead = parseFloat(bookingData.rentAmount || 0) || 0;
+      let tpChargePerHead = 0;
+      if (tpType === 'percent' && tpVal > 0) {
+        tpChargePerHead = +(basePerHead * (tpVal / 100)).toFixed(2);
+      } else if (tpType === 'flat' && tpVal > 0) {
+        tpChargePerHead = +tpVal.toFixed(2);
+      }
+      const totalPerHead = +(basePerHead + tpChargePerHead).toFixed(2);
+
       // Create booking as pending (owner must accept)
       const booking = {
         ...bookingData,
         occupants: occupantCount,
-        status: 'pending', // FIX: bookings now start as pending
+        status: 'pending', // bookings start as pending
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
-        rentAmount: bookingData.rentAmount || 0,
-        // Security deposit and other payment tracking removed per request
+        rentAmount: basePerHead,
+        tpServiceChargeType: tpType,
+        tpServiceChargeValue: tpVal,
+        tpChargePerHead,
+        totalPerHead,
+        // Payment tracking removed per request
       };
 
       transaction.set(bookingRef, booking);

@@ -54,6 +54,9 @@ export default function AddPG() {
     sharingType: 'Single Room',
     totalRooms: 1,
     price: '',
+    // Third-party (TP) services charge config
+    tpServiceChargeType: 'none', // 'none' | 'percent' | 'flat'
+    tpServiceChargeValue: '',
     gender: 'Unisex',
     description: '',
     features: [],
@@ -151,6 +154,17 @@ export default function AddPG() {
     if (!formData.totalRooms || formData.totalRooms <= 0) {
       newErrors.totalRooms = 'Valid room count is required';
     }
+
+    // Validate TP service charge if enabled
+    if (formData.tpServiceChargeType !== 'none') {
+      const v = parseFloat(formData.tpServiceChargeValue);
+      if (isNaN(v) || v < 0) {
+        newErrors.tpServiceChargeValue = 'Enter a valid charge value';
+      }
+      if (formData.tpServiceChargeType === 'percent' && v > 100) {
+        newErrors.tpServiceChargeValue = 'Percent cannot exceed 100';
+      }
+    }
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -179,6 +193,9 @@ export default function AddPG() {
         roomType: formData.sharingType,
         roomCapacity: formData.sharingType && formData.sharingType.toLowerCase().includes('double') ? 2 : (formData.sharingType && formData.sharingType.toLowerCase().includes('triple') ? 3 : 1),
         availableRooms: parseInt(formData.totalRooms),
+        // Normalize TP service charge fields
+        tpServiceChargeType: formData.tpServiceChargeType || 'none',
+        tpServiceChargeValue: formData.tpServiceChargeType === 'none' ? 0 : parseFloat(formData.tpServiceChargeValue || 0),
         // Map features to amenities for display
         amenities: [
           ...formData.features.map(f => availableFeatures.find(af => af.id === f)?.label).filter(Boolean),
@@ -357,6 +374,55 @@ export default function AddPG() {
                         <option key={gender} value={gender}>{gender}</option>
                       ))}
                     </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* TP Service Charge */}
+              <div>
+                <h2 className="text-xl font-bold text-gray-800 mb-6 flex items-center">
+                  <Shield className="w-5 h-5 mr-2 text-green-600" />
+                  Third-party Services Charge
+                </h2>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Charge Type
+                    </label>
+                    <select
+                      value={formData.tpServiceChargeType}
+                      onChange={(e) => handleInputChange('tpServiceChargeType', e.target.value)}
+                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-green-200 focus:border-green-500 focus:outline-none transition-all duration-300"
+                    >
+                      <option value="none">None</option>
+                      <option value="percent">Percent (%) per head</option>
+                      <option value="flat">Flat (₹) per head</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {formData.tpServiceChargeType === 'percent' ? 'Percent (%)' : formData.tpServiceChargeType === 'flat' ? 'Flat Amount (₹)' : 'Charge Value'}
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step={formData.tpServiceChargeType === 'percent' ? '0.1' : '1'}
+                      value={formData.tpServiceChargeValue}
+                      onChange={(e) => handleInputChange('tpServiceChargeValue', e.target.value)}
+                      disabled={formData.tpServiceChargeType === 'none'}
+                      className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-4 focus:ring-green-200 focus:border-green-500 focus:outline-none transition-all duration-300 ${
+                        errors.tpServiceChargeValue ? 'border-red-300' : 'border-gray-300'
+                      } ${formData.tpServiceChargeType === 'none' ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                      placeholder={formData.tpServiceChargeType === 'percent' ? 'e.g., 5' : 'e.g., 49'}
+                    />
+                    {errors.tpServiceChargeValue && (
+                      <p className="mt-1 text-sm text-red-600 flex items-center">
+                        <AlertCircle className="w-4 h-4 mr-1" />
+                        {errors.tpServiceChargeValue}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>

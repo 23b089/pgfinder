@@ -765,7 +765,10 @@ export default function UserDashboard() {
                           </div>
                           <div>
                             <p className="text-sm text-gray-600">Amount (per head)</p>
-                            <p className="font-medium">₹{booking.rentAmount?.toLocaleString?.() || booking.rentAmount} <span className="text-xs text-gray-500">/head</span></p>
+                            <p className="font-medium">₹{(booking.totalPerHead ?? booking.rentAmount)?.toLocaleString?.() || (booking.totalPerHead ?? booking.rentAmount)} <span className="text-xs text-gray-500">/head</span></p>
+                            {booking.tpChargePerHead > 0 && (
+                              <p className="text-xs text-gray-500">Includes TP charge ₹{booking.tpChargePerHead} per head</p>
+                            )}
                           </div>
                         </div>
 
