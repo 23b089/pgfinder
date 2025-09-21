@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Eye, Users, MapPin, Star, DollarSign, Calendar, Phone, Mail, Settings, LogOut, Home, BarChart3, UserCheck, MessageSquare, Bell, CheckCircle, XCircle, Clock } from "lucide-react";
 import Link from "next/link";
 import { getPropertiesByOwner, deleteProperty, updateProperty } from '@/lib/properties';
-import { getOwnerBookings, acceptBooking, rejectBooking, markMonthlyPaymentPaid } from '@/lib/bookings';
+import { getOwnerBookings, acceptBooking, rejectBooking } from '@/lib/bookings';
 
 export default function OwnerDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
@@ -92,37 +92,10 @@ export default function OwnerDashboard() {
     // Calculate stats from actual data
     const totalRooms = ownerPGs.reduce((sum, pg) => sum + (pg.totalRooms || 0), 0);
     const occupiedRooms = ownerPGs.reduce((sum, pg) => sum + (pg.occupiedRooms || 0), 0);
-  const availableRooms = ownerPGs.reduce((sum, pg) => sum + (pg.availableSlots || 0), 0);
-    // Revenue should be based strictly on recorded paid payments (payments array).
-    // Each paid payment entry represents one month's rent for the booking; if a booking
-    // has an `occupants` field, multiply by occupants (defaults to 1).
-    const paymentsMap = {}; // month -> amount
-    let totalRevenueNum = 0;
-    for (const b of bookings) {
-      const rent = Number(b.rentAmount || b.totalAmount || 0) || 0;
-      const occupants = Number(b.occupants || 1) || 1;
-      const payments = b.payments || [];
-      for (const p of payments) {
-        if ((p.status || '').toLowerCase() === 'paid') {
-          const month = p.month || (p.paidAt ? new Date(p.paidAt).toISOString().slice(0,7) : 'unknown');
-          const amount = rent * occupants;
-          paymentsMap[month] = (paymentsMap[month] || 0) + amount;
-          totalRevenueNum += amount;
-        }
-      }
-    }
-
-    // Create a sorted monthly breakdown (latest months first)
-    const monthlyBreakdown = Object.keys(paymentsMap)
-      .filter(m => m && m !== 'unknown')
-      .sort((a,b) => b.localeCompare(a))
-      .slice(0, 12)
-      .map(month => ({ month, amount: paymentsMap[month] }));
-
-    // Use only the current month's revenue for the displayed monthly total so it resets each month
-    const currentMonth = new Date().toISOString().slice(0,7); // 'YYYY-MM'
-    const currentMonthRevenue = paymentsMap[currentMonth] || 0;
-    totalRevenueNum = currentMonthRevenue;
+    const availableRooms = ownerPGs.reduce((sum, pg) => sum + (pg.availableSlots || 0), 0);
+    // Payment tracking removed. Keep placeholders for UI compatibility.
+    const totalRevenueNum = 0;
+    const monthlyBreakdown = [];
     
     return {
       totalRooms,
@@ -213,27 +186,7 @@ export default function OwnerDashboard() {
     }
   };
 
-  // Owner marks monthly payment paid
-  const handleMarkPaid = async (bookingId) => {
-    try {
-      const month = prompt('Enter month to mark as paid (YYYY-MM), e.g. 2025-09:');
-      if (!month) return;
-      const { getCurrentUser } = await import('@/lib/auth');
-      const userResult = await getCurrentUser();
-      if (!userResult.success || !userResult.user) return alert('Not authenticated');
-      const res = await markMonthlyPaymentPaid(bookingId, month, userResult.user.id);
-      if (res.success) {
-        alert('Marked as paid');
-        const bookingsResult = await getOwnerBookings(userResult.user.id);
-        if (bookingsResult.success) setBookings(bookingsResult.bookings);
-      } else {
-        alert('Failed to mark paid: ' + (res.error || 'Unknown error'));
-      }
-    } catch (error) {
-      console.error('Mark paid error:', error);
-      alert('Error marking payment');
-    }
-  };
+  // Payment tracking removed
 
   const cancelDelete = () => {
     setShowDeleteModal(false);
@@ -382,44 +335,7 @@ export default function OwnerDashboard() {
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl shadow-lg p-6">
-                <div className="flex items-center">
-                  <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
-                    <Users className="w-6 h-6 text-white" />
-                  </div>
-                                     <div className="ml-4">
-                     <p className="text-sm font-medium text-gray-600">Occupancy Rate</p>
-                     <p className="text-2xl font-bold text-gray-900">
-                       {stats.totalRooms > 0 ? Math.round((stats.occupiedRooms/stats.totalRooms)*100) : 0}%
-                     </p>
-                   </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-xl shadow-lg p-6">
-                <div className="flex items-center">
-                  <div className="w-12 h-12 bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-lg flex items-center justify-center">
-                    <Star className="w-6 h-6 text-white" />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Average Rating</p>
-                    <p className="text-2xl font-bold text-gray-900">4.5</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-xl shadow-lg p-6">
-                <div className="flex items-center">
-                  <div className="w-12 h-12 bg-gradient-to-r from-red-500 to-red-600 rounded-lg flex items-center justify-center">
-                    <Clock className="w-6 h-6 text-white" />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Pending Requests</p>
-                    <p className="text-2xl font-bold text-gray-900">{bookings.filter(b => b.status === 'pending').length}</p>
-                  </div>
-                </div>
-              </div>
-
+              
               <div className="bg-white rounded-xl shadow-lg p-6">
                 <div className="flex items-center">
                   <div className="w-12 h-12 bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center">
@@ -596,7 +512,7 @@ export default function OwnerDashboard() {
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{booking.propertyName}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{booking.roomType}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{new Date(booking.checkIn).toLocaleDateString()}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">₹{booking.totalAmount?.toLocaleString() || booking.rentAmount?.toLocaleString()} <span className="text-xs text-gray-500">/head</span></td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">₹{booking.rentAmount?.toLocaleString?.() || booking.rentAmount} <span className="text-xs text-gray-500">/head</span></td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                               booking.status === 'confirmed' 
@@ -619,7 +535,7 @@ export default function OwnerDashboard() {
                                   <button onClick={() => handleReject(booking.id)} className="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600">Reject</button>
                                 </>
                               )}
-                              <button onClick={() => handleMarkPaid(booking.id)} className="bg-yellow-500 text-white px-3 py-1 rounded-lg hover:bg-yellow-600">Mark Rent Paid</button>
+                              {/* Payment features removed */}
                               <button className="text-indigo-600 hover:text-indigo-700">
                                 <Eye className="w-4 h-4" />
                               </button>

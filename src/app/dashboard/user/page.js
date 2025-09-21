@@ -34,7 +34,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { getPropertiesForFeed, getAllPropertiesDebug } from '@/lib/properties';
-import { getUserBookings, getUpcomingRentDue, getUserNotifications, markNotificationAsRead, createBooking, completeStay } from '@/lib/bookings';
+import { getUserBookings, getUserNotifications, markNotificationAsRead, createBooking, completeStay, deleteNotifications, deleteAllNotificationsForUser } from '@/lib/bookings';
 
 export default function UserDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
@@ -53,7 +53,9 @@ export default function UserDashboard() {
   const [searchLoading, setSearchLoading] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [upcomingRentDue, setUpcomingRentDue] = useState([]);
+  const [selectedNotifIds, setSelectedNotifIds] = useState([]);
+  const [selectAllNotifs, setSelectAllNotifs] = useState(false);
+  // Rent due tracking removed
   // Bookings visible in the 'Bookings' tab (exclude cancelled)
   const visibleBookings = bookings.filter(b => ((b.status || '').toLowerCase() !== 'cancelled'));
   const [reviewInputs, setReviewInputs] = useState({});
@@ -124,19 +126,17 @@ export default function UserDashboard() {
         setBookings(bookingsResult.bookings);
       }
 
-      // Load upcoming rent due dates
-      const rentDueResult = await getUpcomingRentDue(user.id);
-      if (rentDueResult.success) {
-        setUpcomingRentDue(rentDueResult.upcomingDue);
-      }
+      // Rent due feature removed
 
       // Load user notifications
       const notificationsResult = await getUserNotifications(user.id);
-      if (notificationsResult.success) {
-        setNotifications(notificationsResult.notifications);
+  if (notificationsResult.success) {
+    setNotifications(notificationsResult.notifications);
   // compute unread count
   const unread = (notificationsResult.notifications || []).filter(n => !n.isRead).length;
   setUnreadCount(unread);
+    setSelectedNotifIds([]);
+    setSelectAllNotifs(false);
       }
     } catch (error) {
       console.error('Error loading user data:', error);
@@ -199,7 +199,7 @@ export default function UserDashboard() {
         roomType: pg.roomType,
         occupants: 1,
         rentAmount: pg.price,
-        securityDeposit: Math.round(pg.price * 0.1), // 10% security deposit
+  // securityDeposit removed
         checkIn: new Date().toISOString().split('T')[0],
         checkOut: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
       };
@@ -225,9 +225,46 @@ export default function UserDashboard() {
     window.location.href = '/';
   };
 
-  const downloadReceipt = (payment) => {
-    // Mock receipt download
-    alert(`Downloading receipt for ${payment.pgName} - ${payment.transactionId}`);
+  // Receipt download removed with payments
+
+  // Notification selection and deletion helpers
+  const toggleSelectNotif = (id) => {
+    setSelectedNotifIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+  const toggleSelectAllNotifs = () => {
+    const next = !selectAllNotifs;
+    setSelectAllNotifs(next);
+    setSelectedNotifIds(next ? notifications.map(n => n.id) : []);
+  };
+  const handleDeleteSelected = async () => {
+    if (!currentUser) return alert('Not authenticated');
+    if (selectedNotifIds.length === 0) return;
+    if (!confirm(`Delete ${selectedNotifIds.length} selected notification(s)?`)) return;
+    const res = await deleteNotifications(selectedNotifIds, currentUser.id);
+    if (res.success) {
+      const remaining = notifications.filter(n => !selectedNotifIds.includes(n.id));
+      setNotifications(remaining);
+      const unread = remaining.filter(n => !n.isRead).length;
+      setUnreadCount(unread);
+      setSelectedNotifIds([]);
+      setSelectAllNotifs(false);
+    } else {
+      alert(res.error || 'Failed to delete selected notifications');
+    }
+  };
+  const handleDeleteAll = async () => {
+    if (!currentUser) return alert('Not authenticated');
+    if (notifications.length === 0) return;
+    if (!confirm('Delete ALL notifications? This cannot be undone.')) return;
+    const res = await deleteAllNotificationsForUser(currentUser.id);
+    if (res.success) {
+      setNotifications([]);
+      setUnreadCount(0);
+      setSelectedNotifIds([]);
+      setSelectAllNotifs(false);
+    } else {
+      alert(res.error || 'Failed to delete all notifications');
+    }
   };
 
   const getStatusColor = (status) => {
@@ -370,25 +407,9 @@ export default function UserDashboard() {
         {/* Welcome Section */}
         <div className="bg-white rounded-2xl shadow-xl p-6 mb-8">
           <h2 className="text-3xl font-bold text-gray-800 mb-2">Welcome back, {currentUser?.fullName || 'User'}! 👋</h2>
-          <p className="text-gray-600">Manage your PG bookings, view stay history, and track payments.</p>
+          <p className="text-gray-600">Manage your PG bookings and view your stay history.</p>
         </div>
 
-        {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-1 gap-6 mb-8">
-          <div className="bg-white rounded-2xl shadow-xl p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total Stays</p>
-                <p className="text-2xl font-bold text-gray-900">{bookings.length}</p>
-              </div>
-              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                <Home className="w-6 h-6 text-blue-600" />
-              </div>
-            </div>
-          </div>
-
-          {/* Favorites card removed per request */}
-        </div>
 
         {/* Tabs */}
         <div className="bg-white rounded-2xl shadow-xl mb-8">
@@ -399,7 +420,7 @@ export default function UserDashboard() {
                  { id: 'search', name: 'Search PGs', icon: Search },
                  { id: 'bookings', name: 'Bookings', icon: Calendar },
                  { id: 'history', name: 'Stay History', icon: Clock },
-                 { id: 'rent-due', name: 'Rent Due', icon: AlertCircle },
+                 // Rent Due tab removed
                  { id: 'notifications', name: 'Notifications', icon: Bell }
                ].map((tab) => {
                 const Icon = tab.icon;
@@ -744,7 +765,7 @@ export default function UserDashboard() {
                           </div>
                           <div>
                             <p className="text-sm text-gray-600">Amount (per head)</p>
-                            <p className="font-medium">₹{booking.totalAmount?.toLocaleString() || booking.rentAmount?.toLocaleString()} <span className="text-xs text-gray-500">/head</span></p>
+                            <p className="font-medium">₹{booking.rentAmount?.toLocaleString?.() || booking.rentAmount} <span className="text-xs text-gray-500">/head</span></p>
                           </div>
                         </div>
 
@@ -802,75 +823,24 @@ export default function UserDashboard() {
 
             {/* Payments and Favorites tabs removed per request */}
 
-            {/* Rent Due Tab */}
-            {activeTab === 'rent-due' && (
-              <div>
-                <h3 className="text-xl font-bold text-gray-800 mb-4">Upcoming Rent Due Dates</h3>
-                {upcomingRentDue.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <AlertCircle className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                    <p>No upcoming rent due dates.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {upcomingRentDue.map((rent) => (
-                      <div key={rent.id} className="bg-gray-50 rounded-lg p-6">
-                        <div className="flex items-start justify-between mb-4">
-                          <div>
-                            <h4 className="text-lg font-semibold text-gray-800">{rent.propertyName}</h4>
-                            <p className="text-sm text-gray-600">{rent.location}</p>
-                          </div>
-                          <div className="text-right">
-                            <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                              rent.daysUntilDue <= 7 ? 'bg-red-100 text-red-800' :
-                              rent.daysUntilDue <= 14 ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-green-100 text-green-800'
-                            }`}>
-                              {rent.daysUntilDue === 0 ? 'Due Today' :
-                               rent.daysUntilDue === 1 ? 'Due Tomorrow' :
-                               `${rent.daysUntilDue} days left`}
-                            </span>
-                          </div>
-                        </div>
-                        
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                          <div>
-                            <p className="text-sm text-gray-600">Due Date</p>
-                            <p className="font-medium">{new Date(rent.dueDate).toLocaleDateString()}</p>
-                          </div>
-                          <div>
-                            <p className="text-sm text-gray-600">Rent Amount (per head)</p>
-                            <p className="font-medium">₹{rent.rentAmount?.toLocaleString() || rent.rentAmount} <span className="text-xs text-gray-500">/head</span></p>
-                          </div>
-                          <div>
-                            <p className="text-sm text-gray-600">Room Type</p>
-                            <p className="font-medium">{rent.roomType}</p>
-                          </div>
-                          <div>
-                            <p className="text-sm text-gray-600">Status</p>
-                            <p className="font-medium">{rent.status}</p>
-                          </div>
-                        </div>
-
-                        <div className="flex gap-2">
-                          <button className="bg-green-500 text-white py-2 px-4 rounded-lg font-medium hover:bg-green-600 transition-colors">
-                            Pay Rent
-                          </button>
-                          <button className="bg-indigo-500 text-white py-2 px-4 rounded-lg font-medium hover:bg-indigo-600 transition-colors">
-                            View Details
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
+            {/* Rent Due tab removed */}
 
             {/* Notifications Tab */}
             {activeTab === 'notifications' && (
               <div>
-                <h3 className="text-xl font-bold text-gray-800 mb-4">Notifications</h3>
+                <h3 className="text-xl font-bold text-gray-800 mb-2">Notifications</h3>
+                {notifications.length > 0 && (
+                  <div className="flex items-center justify-between bg-white rounded-lg p-3 mb-3 border border-gray-200">
+                    <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                      <input type="checkbox" checked={selectAllNotifs} onChange={toggleSelectAllNotifs} className="w-4 h-4" />
+                      <span>Select all</span>
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <button onClick={handleDeleteSelected} disabled={selectedNotifIds.length === 0} className={`px-3 py-1.5 rounded-lg text-sm text-white ${selectedNotifIds.length === 0 ? 'bg-gray-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'}`}>Delete selected</button>
+                      <button onClick={handleDeleteAll} className="px-3 py-1.5 rounded-lg text-sm text-white bg-red-700 hover:bg-red-800">Delete all</button>
+                    </div>
+                  </div>
+                )}
                 {notifications.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
                     <Bell className="w-12 h-12 mx-auto mb-4 text-gray-300" />
@@ -881,12 +851,13 @@ export default function UserDashboard() {
                     {notifications.map((notification) => (
                       <div key={notification.id} className={`bg-gray-50 rounded-lg p-4 ${!notification.isRead ? 'border-l-4 border-indigo-500' : ''}`}>
                         <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <h4 className="font-semibold text-gray-800">{notification.title}</h4>
-                            <p className="text-sm text-gray-600 mt-1">{notification.message}</p>
-                            <p className="text-xs text-gray-500 mt-2">
-                              {new Date(notification.createdAt?.toDate()).toLocaleString()}
-                            </p>
+                          <div className="flex items-start gap-3 flex-1">
+                            <input type="checkbox" className="mt-1 w-4 h-4" checked={selectedNotifIds.includes(notification.id)} onChange={() => toggleSelectNotif(notification.id)} />
+                            <div>
+                              <h4 className="font-semibold text-gray-800">{notification.title}</h4>
+                              <p className="text-sm text-gray-600 mt-1">{notification.message}</p>
+                              <p className="text-xs text-gray-500 mt-2">{new Date(notification.createdAt?.toDate()).toLocaleString()}</p>
+                            </div>
                           </div>
                           <div className="flex items-center space-x-2 ml-4">
                             {!notification.isRead && (
@@ -932,4 +903,5 @@ export default function UserDashboard() {
       </div>
     </div>
   );
+
 }

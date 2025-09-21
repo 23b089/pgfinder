@@ -46,7 +46,8 @@ export default function PGsPage() {
   const [searchFilters, setSearchFilters] = useState({
     location: '',
     gender: '',
-    budget: '',
+  minPrice: '',
+  maxPrice: '',
     roomType: '',
     foodIncluded: ''
   });
@@ -121,15 +122,14 @@ export default function PGsPage() {
         roomType: pg.roomType || pg.sharingType,
   // book a single space by default
   occupants: 1,
-        rentAmount: pg.price,
-        securityDeposit: Math.round(pg.price * 0.1), // 10% security deposit
+  rentAmount: pg.price,
         checkIn: new Date().toISOString().split('T')[0],
         checkOut: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
       };
 
       const result = await createBooking(bookingData);
       if (result.success) {
-        alert('PG booked successfully! Please complete the payment to confirm your booking.');
+        alert('Booking created successfully! Wait for the owner to accept your request.');
         // Refresh properties to update availability
         await loadProperties();
       } else {
@@ -157,7 +157,8 @@ export default function PGsPage() {
     if (searchFilters.location && !pg.location.toLowerCase().includes(searchFilters.location.toLowerCase())) return false;
     if (searchFilters.gender && pg.gender !== searchFilters.gender && pg.gender !== 'Unisex') return false;
     if (searchFilters.roomType && pg.roomType !== searchFilters.roomType) return false;
-    if (searchFilters.budget && pg.price > parseInt(searchFilters.budget)) return false;
+    if (searchFilters.minPrice && pg.price < parseInt(searchFilters.minPrice)) return false;
+    if (searchFilters.maxPrice && pg.price > parseInt(searchFilters.maxPrice)) return false;
     return true;
   });
 
@@ -211,7 +212,7 @@ export default function PGsPage() {
             Search & Filter PGs
           </h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
             <div className="relative">
               <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
@@ -235,10 +236,20 @@ export default function PGsPage() {
             </select>
 
             <input
-              type="text"
-              placeholder="Budget..."
-              value={searchFilters.budget}
-              onChange={(e) => setSearchFilters({...searchFilters, budget: e.target.value})}
+              type="number"
+              min="0"
+              placeholder="Min budget"
+              value={searchFilters.minPrice}
+              onChange={(e) => setSearchFilters({...searchFilters, minPrice: e.target.value})}
+              className="w-full pl-4 pr-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-indigo-200 focus:border-indigo-500 focus:outline-none text-black bg-white hover:bg-gray-50 transition-all duration-300"
+            />
+
+            <input
+              type="number"
+              min="0"
+              placeholder="Max budget"
+              value={searchFilters.maxPrice}
+              onChange={(e) => setSearchFilters({...searchFilters, maxPrice: e.target.value})}
               className="w-full pl-4 pr-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-indigo-200 focus:border-indigo-500 focus:outline-none text-black bg-white hover:bg-gray-50 transition-all duration-300"
             />
 
@@ -267,7 +278,8 @@ export default function PGsPage() {
               onClick={() => setSearchFilters({
                 location: '',
                 gender: '',
-                budget: '',
+                minPrice: '',
+                maxPrice: '',
                 roomType: '',
                 foodIncluded: ''
               })}
@@ -380,14 +392,23 @@ export default function PGsPage() {
                       View Details
                     </Link>
                     {currentUser?.role === 'user' && (
-                      <button 
-                        onClick={() => bookPG(pg)}
-                          disabled={!pg.availableSlots || pg.availableSlots <= 0}
-                        className="bg-green-500 text-white py-2 px-4 rounded-lg font-medium hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-                      >
-                        <BookOpen className="w-4 h-4 mr-1" />
-                          {pg.availableSlots > 0 ? 'Book PG' : 'Full'}
-                      </button>
+                      pg.availableSlots > 0 ? (
+                        <Link
+                          href={`/pgs/${pg.id}/book`}
+                          className="bg-green-500 text-white py-2 px-4 rounded-lg font-medium hover:bg-green-600 transition-colors flex items-center text-center"
+                        >
+                          <BookOpen className="w-4 h-4 mr-1" />
+                          Book PG
+                        </Link>
+                      ) : (
+                        <button
+                          disabled
+                          className="bg-gray-300 text-white py-2 px-4 rounded-lg font-medium cursor-not-allowed flex items-center"
+                        >
+                          <BookOpen className="w-4 h-4 mr-1" />
+                          Full
+                        </button>
+                      )
                     )}
                   </div>
                 </div>

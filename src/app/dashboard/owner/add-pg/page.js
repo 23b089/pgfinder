@@ -52,7 +52,6 @@ export default function AddPG() {
     pgName: '',
     location: '',
     sharingType: 'Single Room',
-  qrCodeUrl: '',
     totalRooms: 1,
     price: '',
     gender: 'Unisex',
@@ -260,17 +259,7 @@ export default function AddPG() {
                     )}
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">QR Code URL (for payments)</label>
-                    <input
-                      type="text"
-                      value={formData.qrCodeUrl}
-                      onChange={(e) => handleInputChange('qrCodeUrl', e.target.value)}
-                      className="w-full px-4 py-3 border-2 rounded-xl focus:ring-4 focus:ring-green-200 focus:border-green-500 focus:outline-none transition-all duration-300 border-gray-300"
-                      placeholder="https://... (image or payment link)"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">Optional: add a QR code image URL or UPI link to display to users for manual payments.</p>
-                  </div>
+                  {/* Payment-related QR field removed */}
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">

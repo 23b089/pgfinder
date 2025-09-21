@@ -15,6 +15,7 @@ import {
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { updateRoomAvailability } from './properties';
+import { writeBatch } from 'firebase/firestore';
 
 // Create notification helper (used below)
 export const createNotification = async (notificationData) => {
@@ -119,53 +120,6 @@ export const completeStay = async (bookingId, userId) => {
   }
 };
 
-// Owner marks monthly payment as paid for a booking
-export const markMonthlyPaymentPaid = async (bookingId, monthString, ownerId) => {
-  try {
-    const bookingRef = doc(db, 'bookings', bookingId);
-    const bookingDoc = await getDoc(bookingRef);
-    if (!bookingDoc.exists()) return { success: false, error: 'Booking not found' };
-
-    const booking = bookingDoc.data();
-    if (booking.ownerId !== ownerId) return { success: false, error: 'Unauthorized' };
-
-    // Ensure payments array exists
-    const payments = booking.payments || [];
-
-    // Avoid duplicate month entries
-    if (payments.some(p => p.month === monthString && p.status === 'paid')) {
-      return { success: false, error: 'Month already marked paid' };
-    }
-
-    const paymentEntry = {
-      month: monthString, // e.g., '2025-09'
-      status: 'paid',
-      paidBy: ownerId,
-      // serverTimestamp() cannot be used inside arrays — use ISO string timestamp instead
-      paidAt: new Date().toISOString()
-    };
-
-    const updatedPayments = [...payments, paymentEntry];
-    await updateDoc(bookingRef, { payments: updatedPayments, updatedAt: serverTimestamp() });
-
-    // Notify user
-    await createNotification({
-      userId: booking.userId,
-      type: 'monthly_payment_marked',
-      title: 'Monthly Rent Marked Paid',
-      message: `Owner has marked payment for ${monthString} as received for ${booking.propertyName || booking.pgName}.`,
-      bookingId,
-      propertyId: booking.propertyId,
-      isRead: false
-    });
-
-    return { success: true };
-  } catch (error) {
-    console.error('Mark monthly payment paid error:', error);
-    return { success: false, error: error.message };
-  }
-};
-
 // Create a new booking (start as pending). Owner must accept to confirm.
 export const createBooking = async (bookingData) => {
   try {
@@ -212,14 +166,10 @@ export const createBooking = async (bookingData) => {
         ...bookingData,
         occupants: occupantCount,
         status: 'pending', // FIX: bookings now start as pending
-        paymentStatus: 'pending',
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
-        // confirmedAt is only set when owner accepts
-        dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
         rentAmount: bookingData.rentAmount || 0,
-        securityDeposit: bookingData.securityDeposit || 0,
-        totalAmount: (bookingData.rentAmount || 0) + (bookingData.securityDeposit || 0)
+        // Security deposit and other payment tracking removed per request
       };
 
       transaction.set(bookingRef, booking);
@@ -247,40 +197,6 @@ export const createBooking = async (bookingData) => {
     return { success: true, bookingId };
   } catch (error) {
     console.error('Create booking error:', error);
-    return { success: false, error: error.message };
-  }
-};
-
-// Get upcoming rent due dates
-export const getUpcomingRentDue = async (userId) => {
-  try {
-    const q = query(
-      collection(db, 'bookings'),
-      where('userId', '==', userId),
-      where('status', '==', 'confirmed'),
-      where('paymentStatus', '==', 'paid')
-    );
-
-    const querySnapshot = await getDocs(q);
-    const upcomingDue = [];
-    const now = new Date();
-
-    querySnapshot.forEach((doc) => {
-      const booking = doc.data();
-      const dueDate = new Date(booking.dueDate);
-
-      if (dueDate > now) {
-        upcomingDue.push({
-          ...booking,
-          id: doc.id,
-          daysUntilDue: Math.ceil((dueDate - now) / (1000 * 60 * 60 * 24))
-        });
-      }
-    });
-
-    return { success: true, upcomingDue: upcomingDue.sort((a, b) => a.daysUntilDue - b.daysUntilDue) };
-  } catch (error) {
-    console.error('Get upcoming rent due error:', error);
     return { success: false, error: error.message };
   }
 };
@@ -414,6 +330,61 @@ export const getUserNotifications = async (userId) => {
   }
 };
 
+// Delete a single notification (authorized by user)
+export const deleteNotification = async (notificationId, userId) => {
+  try {
+    const notifRef = doc(db, 'notifications', notificationId);
+    const notifSnap = await getDoc(notifRef);
+    if (!notifSnap.exists()) return { success: false, error: 'Notification not found' };
+    const notif = notifSnap.data();
+    if (notif.userId !== userId) return { success: false, error: 'Unauthorized' };
+    await deleteDoc(notifRef);
+    return { success: true };
+  } catch (error) {
+    console.error('Delete notification error:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+// Delete multiple notifications by ids (authorized by user)
+export const deleteNotifications = async (notificationIds = [], userId) => {
+  try {
+    if (!Array.isArray(notificationIds) || notificationIds.length === 0) {
+      return { success: true };
+    }
+    const batch = writeBatch(db);
+    for (const id of notificationIds) {
+      const ref = doc(db, 'notifications', id);
+      const snap = await getDoc(ref);
+      if (snap.exists() && snap.data().userId === userId) {
+        batch.delete(ref);
+      }
+    }
+    await batch.commit();
+    return { success: true };
+  } catch (error) {
+    console.error('Batch delete notifications error:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+// Delete all notifications for a user
+export const deleteAllNotificationsForUser = async (userId) => {
+  try {
+    const q = query(collection(db, 'notifications'), where('userId', '==', userId));
+    const snap = await getDocs(q);
+    const batch = writeBatch(db);
+    snap.forEach(docSnap => {
+      batch.delete(doc(db, 'notifications', docSnap.id));
+    });
+    await batch.commit();
+    return { success: true };
+  } catch (error) {
+    console.error('Delete all notifications error:', error);
+    return { success: false, error: error.message };
+  }
+};
+
 // Mark a notification as read
 export const markNotificationAsRead = async (notificationId, userId) => {
   try {
@@ -428,6 +399,24 @@ export const markNotificationAsRead = async (notificationId, userId) => {
     return { success: true };
   } catch (error) {
     console.error('Mark notification read error:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+// Optional: Mark a notification as UNREAD (used by UI toggle)
+export const markNotificationAsUnread = async (notificationId, userId) => {
+  try {
+    const notifRef = doc(db, 'notifications', notificationId);
+    const notifDoc = await getDoc(notifRef);
+    if (!notifDoc.exists()) return { success: false, error: 'Notification not found' };
+
+    const notif = notifDoc.data();
+    if (notif.userId !== userId) return { success: false, error: 'Unauthorized' };
+
+    await updateDoc(notifRef, { isRead: false, updatedAt: serverTimestamp() });
+    return { success: true };
+  } catch (error) {
+    console.error('Mark notification unread error:', error);
     return { success: false, error: error.message };
   }
 };
