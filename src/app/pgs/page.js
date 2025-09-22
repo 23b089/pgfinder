@@ -35,10 +35,12 @@ import {
   BookOpen
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from 'next/navigation';
 import { getPropertiesForFeed } from '@/lib/properties';
 import { createBooking } from '@/lib/bookings';
 
 export default function PGsPage() {
+  const router = useRouter();
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState(null);
@@ -105,40 +107,12 @@ export default function PGsPage() {
       alert('Please login to book a PG');
       return;
     }
-
     if (currentUser.role !== 'user') {
       alert('Only users can book PGs');
       return;
     }
-
-    try {
-      const bookingData = {
-        userId: currentUser.id,
-        userName: currentUser.fullName,
-        propertyId: pg.id,
-        propertyName: pg.pgName || pg.name,
-        ownerId: pg.ownerId,
-        location: pg.location,
-        roomType: pg.roomType || pg.sharingType,
-  // book a single space by default
-  occupants: 1,
-  rentAmount: pg.price,
-        checkIn: new Date().toISOString().split('T')[0],
-        checkOut: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-      };
-
-      const result = await createBooking(bookingData);
-      if (result.success) {
-        alert('Booking created successfully! Wait for the owner to accept your request.');
-        // Refresh properties to update availability
-        await loadProperties();
-      } else {
-        alert(result.error || 'Booking failed');
-      }
-    } catch (error) {
-      console.error('Error booking PG:', error);
-      alert('Error booking PG. Please try again.');
-    }
+    // Always route through OTP phone verification flow
+    router.push(`/pgs/${pg.id}/book`);
   };
 
   const getStatusColor = (status) => {

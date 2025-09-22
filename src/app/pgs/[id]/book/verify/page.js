@@ -60,7 +60,7 @@ export default function VerifyBookingPage() {
         occupants: 1,
   rentAmount: property.price,
         checkIn: new Date().toISOString().split('T')[0],
-        checkOut: new Date(Date.now() + 30*24*60*60*1000).toISOString().split('T')[0]
+        checkOut: null
       };
 
       const result = await createBooking(bookingData);

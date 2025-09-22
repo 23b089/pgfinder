@@ -32,15 +32,18 @@ import {
   Bell
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from 'next/navigation';
 import { getPropertiesForFeed } from '@/lib/properties';
 import { getUserBookings, getUserNotifications, markNotificationAsRead, createBooking, completeStay, deleteNotifications, deleteAllNotificationsForUser } from '@/lib/bookings';
 
 export default function UserDashboard() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState('overview');
   const [searchFilters, setSearchFilters] = useState({
     location: '',
     gender: '',
-    budget: '',
+    minPrice: '',
+    maxPrice: '',
     roomType: '',
     foodIncluded: ''
   });
@@ -175,42 +178,15 @@ export default function UserDashboard() {
       return;
     }
 
-    try {
-      // Basic UI-side availability check
-      const available = pg.availableSlots != null ? parseInt(pg.availableSlots, 10) : 0;
-      if (available <= 0) {
-        alert('No slots available for this PG');
-        return;
-      }
-      const bookingData = {
-        userId: currentUser.id,
-        userName: currentUser.fullName,
-        propertyId: pg.id,
-        propertyName: pg.pgName || pg.name,
-        ownerId: pg.ownerId,
-        location: pg.location,
-        roomType: pg.roomType,
-        occupants: 1,
-        rentAmount: pg.price,
-  // securityDeposit removed
-        checkIn: new Date().toISOString().split('T')[0],
-        checkOut: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-      };
-
-      const result = await createBooking(bookingData);
-      if (result.success) {
-        alert('PG booked successfully! Please complete the payment to confirm your booking.');
-        // Refresh user data
-        loadUserData(currentUser);
-        // Switch to bookings tab
-        setActiveTab('bookings');
-      } else {
-        alert(result.error || 'Booking failed');
-      }
-    } catch (error) {
-      console.error('Error booking PG:', error);
-      alert('Error booking PG. Please try again.');
+    // Basic UI-side availability check
+    const available = pg.availableSlots != null ? parseInt(pg.availableSlots, 10) : 0;
+    if (available <= 0) {
+      alert('No slots available for this PG');
+      return;
     }
+
+    // Always route through OTP phone verification flow
+    router.push(`/pgs/${pg.id}/book`);
   };
 
   const handleLogout = () => {
@@ -455,7 +431,7 @@ export default function UserDashboard() {
                         <div className="flex items-center justify-between">
                           <div>
                             <h4 className="font-semibold text-gray-800">{booking.pgName}</h4>
-                            <p className="text-sm text-gray-600">{booking.checkIn} - {booking.checkOut}</p>
+                            <p className="text-sm text-gray-600">{booking.checkIn} - {booking.checkOut || '—'}</p>
                           </div>
                           <div className="flex items-center space-x-2">
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}>
@@ -474,11 +450,7 @@ export default function UserDashboard() {
 
                                  <div>
                    <h3 className="text-xl font-bold text-gray-800 mb-4">Quick Actions</h3>
-                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                     <Link href="/pgs" className="bg-indigo-50 text-indigo-700 p-4 rounded-lg hover:bg-indigo-100 transition-colors text-center">
-                       <Search className="w-6 h-6 mx-auto mb-2" />
-                       <span className="text-sm font-medium">Browse PGs</span>
-                     </Link>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                      <button 
                        onClick={() => setActiveTab('search')}
                        className="bg-indigo-50 text-indigo-700 p-4 rounded-lg hover:bg-indigo-100 transition-colors"
@@ -502,7 +474,7 @@ export default function UserDashboard() {
                    
                    {/* Search Form */}
                    <div className="bg-gray-50 rounded-xl p-6 mb-6">
-                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                     <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
                        <div className="relative">
                          <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                          <input
@@ -526,10 +498,20 @@ export default function UserDashboard() {
                        </select>
 
                        <input
-                         type="text"
-                         placeholder="Budget..."
-                         value={searchFilters.budget}
-                         onChange={(e) => setSearchFilters({...searchFilters, budget: e.target.value})}
+                         type="number"
+                         min="0"
+                         placeholder="Min budget"
+                         value={searchFilters.minPrice}
+                         onChange={(e) => setSearchFilters({...searchFilters, minPrice: e.target.value})}
+                         className="w-full pl-4 pr-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-indigo-200 focus:border-indigo-500 focus:outline-none text-black bg-white hover:bg-gray-50 transition-all duration-300"
+                       />
+
+                       <input
+                         type="number"
+                         min="0"
+                         placeholder="Max budget"
+                         value={searchFilters.maxPrice}
+                         onChange={(e) => setSearchFilters({...searchFilters, maxPrice: e.target.value})}
                          className="w-full pl-4 pr-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-indigo-200 focus:border-indigo-500 focus:outline-none text-black bg-white hover:bg-gray-50 transition-all duration-300"
                        />
 
@@ -563,7 +545,8 @@ export default function UserDashboard() {
                          onClick={() => setSearchFilters({
                            location: '',
                            gender: '',
-                           budget: '',
+                           minPrice: '',
+                           maxPrice: '',
                            roomType: '',
                            foodIncluded: ''
                          })}
@@ -575,9 +558,8 @@ export default function UserDashboard() {
                    </div>
                  </div>
 
-                 {/* Search Results */}
-                 <div>
-                   <h3 className="text-xl font-bold text-gray-800 mb-4">Available PGs ({properties.length})</h3>
+                {/* Search Results */}
+                <div>
                    {searchLoading ? (
                      <div className="text-center py-8">
                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
@@ -596,7 +578,8 @@ export default function UserDashboard() {
                            if (searchFilters.location && !pg.location.toLowerCase().includes(searchFilters.location.toLowerCase())) return false;
                            if (searchFilters.gender && pg.gender !== searchFilters.gender && pg.gender !== 'Unisex') return false;
                            if (searchFilters.roomType && pg.roomType !== searchFilters.roomType) return false;
-                           if (searchFilters.budget && pg.price > parseInt(searchFilters.budget)) return false;
+                           if (searchFilters.minPrice && pg.price < parseInt(searchFilters.minPrice)) return false;
+                           if (searchFilters.maxPrice && pg.price > parseInt(searchFilters.maxPrice)) return false;
                            return true;
                          })
                          .map((pg) => (
@@ -690,7 +673,7 @@ export default function UserDashboard() {
                         <div className="flex items-center justify-between">
                           <div>
                             <h4 className="font-semibold text-gray-800">{booking.pgName}</h4>
-                            <p className="text-sm text-gray-600">{booking.checkIn} - {booking.checkOut}</p>
+                            <p className="text-sm text-gray-600">{booking.checkIn} - {booking.checkOut || '—'}</p>
                           </div>
                           <div className="flex items-center space-x-2">
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}>
@@ -752,12 +735,12 @@ export default function UserDashboard() {
                             <p className="font-medium text-black">{new Date(booking.checkOut).toLocaleDateString()}</p>
                           </div>
                           <div>
-                            <p className="text-sm text-gray-600">Room Type</p>
-                            <p className="font-medium">{booking.roomType}</p>
+                            <p className="text-sm text-black">Room Type</p>
+                            <p className="font-medium text-black">{booking.roomType}</p>
                           </div>
                           <div>
-                            <p className="text-sm text-gray-600">Amount (per head)</p>
-                            <p className="font-medium">₹{booking.rentAmount?.toLocaleString?.() || booking.rentAmount} <span className="text-xs text-gray-500">/head</span></p>
+                            <p className="text-sm text-black">Amount (per head)</p>
+                            <p className="font-medium text-black">₹{booking.rentAmount?.toLocaleString?.() || booking.rentAmount} <span className="text-xs text-black">/head</span></p>
                           </div>
                         </div>
 

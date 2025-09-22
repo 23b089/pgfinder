@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Users, Eye, EyeOff, Lock, Mail } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { loginUser } from '@/lib/auth';
+import { loginUser, loginWithGoogle } from '@/lib/auth';
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
@@ -62,6 +62,39 @@ export default function Login() {
       ...formData,
       [e.target.name]: e.target.value
     });
+  };
+
+  const handleGoogleLogin = async () => {
+    setLoading(true);
+    setError('');
+
+    // Require role selection before using Google sign-in
+    if (!formData.role) {
+      setError('Please select your role before continuing with Google.');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const result = await loginWithGoogle(formData.role);
+      if (result.success) {
+        const user = result.user;
+        if (user.role === 'user') {
+          router.push('/dashboard/user');
+        } else if (user.role === 'owner') {
+          router.push('/dashboard/owner');
+        } else {
+          router.push('/dashboard/user');
+        }
+      } else {
+        setError(result.error || 'Google sign-in failed.');
+      }
+    } catch (err) {
+      console.error('Google sign-in error:', err);
+      setError('An error occurred during Google sign-in. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -196,6 +229,7 @@ export default function Login() {
           <div className="space-y-3">
             <button 
               type="button"
+              onClick={handleGoogleLogin}
               disabled={loading}
               className="w-full bg-white border-2 border-gray-300 text-gray-700 py-3 px-4 rounded-xl font-medium hover:bg-gray-50 transition-all duration-300 flex items-center justify-center disabled:opacity-50"
             >

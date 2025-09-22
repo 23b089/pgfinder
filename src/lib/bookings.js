@@ -62,9 +62,11 @@ export const completeStay = async (bookingId, userId) => {
       await updateRoomAvailability(booking.propertyId, 'cancel', occupantCount);
     }
 
-    // Mark booking as completed
+    // Mark booking as completed and stamp checkout date (now)
+    const nowIso = new Date().toISOString();
     await updateDoc(bookingRef, {
       status: 'completed',
+      checkOut: nowIso,
       updatedAt: serverTimestamp(),
       completedAt: serverTimestamp()
     });
@@ -80,7 +82,7 @@ export const completeStay = async (bookingId, userId) => {
           propertyId: booking.propertyId,
           propertyName: booking.propertyName || booking.pgName || '',
           checkIn: booking.checkIn,
-          checkOut: booking.checkOut,
+          checkOut: nowIso,
           // serverTimestamp() cannot be used inside arrays — use ISO string timestamp instead
           completedAt: new Date().toISOString()
         };
@@ -123,6 +125,22 @@ export const completeStay = async (bookingId, userId) => {
 // Create a new booking (start as pending). Owner must accept to confirm.
 export const createBooking = async (bookingData) => {
   try {
+    // Enforce phone verification: require bookingData to indicate phoneVerified or ensure user has phoneNumber
+    try {
+      const { auth } = await import('./firebase');
+      const user = auth.currentUser;
+      const hasVerifiedPhone = !!(user && user.phoneNumber);
+      const allow = hasVerifiedPhone || bookingData.phoneVerified === true;
+      if (!allow) {
+        return { success: false, error: 'Phone verification required before booking.' };
+      }
+    } catch (e) {
+      // If auth lookup fails, be safe and require explicit flag
+      if (bookingData.phoneVerified !== true) {
+        return { success: false, error: 'Phone verification required before booking.' };
+      }
+    }
+
     // Prevent duplicate booking for the same PG by the same user if an active/ongoing booking exists
     try {
       const existingQ = query(collection(db, 'bookings'), where('userId', '==', bookingData.userId));
@@ -187,6 +205,7 @@ export const createBooking = async (bookingData) => {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         rentAmount: bookingData.rentAmount || 0,
+        checkOut: null,
         // Security deposit and other payment tracking removed per request
       };
 

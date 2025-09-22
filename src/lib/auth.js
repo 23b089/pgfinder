@@ -3,7 +3,9 @@ import {
   signInWithEmailAndPassword, 
   signOut, 
   onAuthStateChanged,
-  updateProfile 
+  updateProfile,
+  GoogleAuthProvider,
+  signInWithPopup
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, getDocs, collection, query, where } from 'firebase/firestore';
 import { auth, db } from './firebase';
@@ -234,6 +236,55 @@ export const deleteAccount = async (userId) => {
     return { success: true };
   } catch (error) {
     console.error('Delete account error:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+// Google sign-in
+export const loginWithGoogle = async (selectedRole) => {
+  try {
+    const provider = new GoogleAuthProvider();
+    const result = await signInWithPopup(auth, provider);
+    const user = result.user;
+
+    // Look up Firestore user document
+    const userRef = doc(db, 'users', user.uid);
+    const existingDoc = await getDoc(userRef);
+
+    if (existingDoc.exists()) {
+      const data = existingDoc.data();
+
+      // Enforce role match if a role was selected in UI
+      if (selectedRole && data.role && data.role !== selectedRole) {
+        // Sign out to avoid being stuck signed-in with wrong role
+        await signOut(auth);
+        return { success: false, error: `You are registered as a ${data.role}, not as ${selectedRole}. Please select the correct role.` };
+      }
+
+      return { success: true, user: { ...data, id: user.uid } };
+    }
+
+    // New user via Google: require role from UI, default to 'user' if not provided
+    const role = selectedRole || 'user';
+    const userDoc = {
+      uid: user.uid,
+      email: user.email || '',
+      fullName: user.displayName || '',
+      phone: user.phoneNumber || '',
+      role,
+      createdAt: new Date().toISOString(),
+      properties: role === 'owner' ? [] : [],
+      favorites: role === 'user' ? [] : [],
+      bookings: role === 'user' ? [] : [],
+      stayHistory: role === 'user' ? [] : [],
+      paymentHistory: role === 'user' ? [] : []
+    };
+
+    await setDoc(userRef, userDoc);
+
+    return { success: true, user: { ...userDoc, id: user.uid } };
+  } catch (error) {
+    console.error('Google login error:', error);
     return { success: false, error: error.message };
   }
 };
