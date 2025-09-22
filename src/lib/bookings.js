@@ -123,6 +123,24 @@ export const completeStay = async (bookingId, userId) => {
 // Create a new booking (start as pending). Owner must accept to confirm.
 export const createBooking = async (bookingData) => {
   try {
+    // Prevent duplicate booking for the same PG by the same user if an active/ongoing booking exists
+    try {
+      const existingQ = query(collection(db, 'bookings'), where('userId', '==', bookingData.userId));
+      const existingSnap = await getDocs(existingQ);
+      const blockedStatuses = ['pending', 'confirmed', 'active', 'paid'];
+      const hasOngoingForSamePG = existingSnap.docs.some((d) => {
+        const b = d.data();
+        const status = ((b.status || '') + '').toLowerCase();
+        return b.propertyId === bookingData.propertyId && blockedStatuses.includes(status);
+      });
+      if (hasOngoingForSamePG) {
+        return { success: false, error: 'You already have an active booking for this PG.' };
+      }
+    } catch (dupeErr) {
+      console.error('Duplicate booking pre-check failed:', dupeErr);
+      // Continue to attempt booking if pre-check fails due to index or transient errors
+    }
+
     // Reserve a slot at booking time using a transaction to avoid overbooking.
     const bookingRef = doc(collection(db, 'bookings'));
     const bookingId = bookingRef.id;

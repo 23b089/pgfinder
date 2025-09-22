@@ -13,8 +13,7 @@ import {
   startAfter,
   serverTimestamp 
 } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, storage } from './firebase';
+import { db } from './firebase';
 
 // Add new PG property
 export const addProperty = async (propertyData, ownerId) => {
@@ -267,25 +266,7 @@ export const getProperties = async (filters = {}, page = 1, limitCount = 10) => 
   }
 };
 
-// Upload property image
-export const uploadPropertyImage = async (file, propertyId) => {
-  try {
-    const storageRef = ref(storage, `pg_listings/${propertyId}/${file.name}`);
-    const snapshot = await uploadBytes(storageRef, file);
-    const downloadURL = await getDownloadURL(snapshot.ref);
-    
-    return {
-      success: true,
-      url: downloadURL
-    };
-  } catch (error) {
-    console.error('Upload image error:', error);
-    return {
-      success: false,
-      error: error.message
-    };
-  }
-};
+// Image upload disabled: uploadPropertyImage removed
 
 // Search properties
 export const searchProperties = async (searchTerm, filters = {}) => {
@@ -465,30 +446,6 @@ export const getPropertiesForFeed = async (filters = {}, page = 1, limitCount = 
     };
   } catch (error) {
     console.error('Get properties for feed error:', error);
-    return {
-      success: false,
-      error: error.message
-    };
-  }
-};
-
-// Debug function to get all properties (for troubleshooting)
-export const getAllPropertiesDebug = async () => {
-  try {
-    const querySnapshot = await getDocs(collection(db, 'pg_listings'));
-    const properties = [];
-    querySnapshot.forEach((doc) => {
-      properties.push({ ...doc.data(), id: doc.id });
-    });
-    
-    console.log('All properties in database:', properties);
-    return {
-      success: true,
-      properties,
-      total: properties.length
-    };
-  } catch (error) {
-    console.error('Debug get all properties error:', error);
     return {
       success: false,
       error: error.message

@@ -26,14 +26,13 @@ import {
   XCircle,
   AlertCircle,
   TrendingUp,
-  Receipt,
   Download,
   Edit,
   Trash2,
   Bell
 } from "lucide-react";
 import Link from "next/link";
-import { getPropertiesForFeed, getAllPropertiesDebug } from '@/lib/properties';
+import { getPropertiesForFeed } from '@/lib/properties';
 import { getUserBookings, getUserNotifications, markNotificationAsRead, createBooking, completeStay, deleteNotifications, deleteAllNotificationsForUser } from '@/lib/bookings';
 
 export default function UserDashboard() {
@@ -144,11 +143,7 @@ export default function UserDashboard() {
   const loadPropertiesForFeed = async () => {
     try {
       setSearchLoading(true);
-      
-      // Debug: Get all properties first
-      const debugResult = await getAllPropertiesDebug();
-      console.log('Debug - All properties:', debugResult);
-      
+
       const result = await getPropertiesForFeed();
       console.log('Feed result:', result);
       
@@ -210,7 +205,7 @@ export default function UserDashboard() {
         // Switch to bookings tab
         setActiveTab('bookings');
       } else {
-        alert('Booking failed: ' + result.error);
+        alert(result.error || 'Booking failed');
       }
     } catch (error) {
       console.error('Error booking PG:', error);
@@ -491,10 +486,7 @@ export default function UserDashboard() {
                        <Search className="w-6 h-6 mx-auto mb-2" />
                        <span className="text-sm font-medium">Search PGs</span>
                      </button>
-                     <button className="bg-purple-50 text-purple-700 p-4 rounded-lg hover:bg-purple-100 transition-colors">
-                       <Receipt className="w-6 h-6 mx-auto mb-2" />
-                       <span className="text-sm font-medium">View Receipts</span>
-                     </button>
+                     {/* Receipts quick action removed with payments */}
                     {/* Favorites quick action removed per request */}
                    </div>
                                   </div>

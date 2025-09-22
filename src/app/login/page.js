@@ -156,7 +156,6 @@ export default function Login() {
                   <option value="">Select your role</option>
                   <option value="user">User - Find PGs</option>
                   <option value="owner">PG Owner - Manage Properties</option>
-                  <option value="admin">Super Admin - System Management</option>
                 </select>
               </div>
             </div>

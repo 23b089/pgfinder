@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Eye, Users, MapPin, Star, DollarSign, Calendar, Phone, Mail, Settings, LogOut, Home, BarChart3, UserCheck, MessageSquare, Bell, CheckCircle, XCircle, Clock } from "lucide-react";
+import { Plus, Edit, Trash2, Eye, Users, MapPin, Calendar, Phone, Mail, Settings, LogOut, Home, BarChart3, UserCheck, CheckCircle, XCircle, Clock } from "lucide-react";
 import Link from "next/link";
 import { getPropertiesByOwner, deleteProperty, updateProperty } from '@/lib/properties';
 import { getOwnerBookings, acceptBooking, rejectBooking } from '@/lib/bookings';
@@ -93,16 +93,11 @@ export default function OwnerDashboard() {
     const totalRooms = ownerPGs.reduce((sum, pg) => sum + (pg.totalRooms || 0), 0);
     const occupiedRooms = ownerPGs.reduce((sum, pg) => sum + (pg.occupiedRooms || 0), 0);
     const availableRooms = ownerPGs.reduce((sum, pg) => sum + (pg.availableSlots || 0), 0);
-    // Payment tracking removed. Keep placeholders for UI compatibility.
-    const totalRevenueNum = 0;
-    const monthlyBreakdown = [];
     
     return {
       totalRooms,
       occupiedRooms,
-      availableRooms,
-      totalRevenueNum,
-      monthlyBreakdown
+      availableRooms
     };
   };
 
@@ -232,11 +227,6 @@ export default function OwnerDashboard() {
             </div>
             <nav className="hidden md:flex items-center space-x-6">
               <Link href="#" className="hover:text-green-200 transition-colors flex items-center">
-                <Bell className="w-4 h-4 mr-1" />
-                Notifications
-                <span className="ml-1 bg-red-500 text-xs px-2 py-1 rounded-full">3</span>
-              </Link>
-              <Link href="#" className="hover:text-green-200 transition-colors flex items-center">
                 <Settings className="w-4 h-4 mr-1" />
                 Settings
               </Link>
@@ -259,8 +249,7 @@ export default function OwnerDashboard() {
             {[
               { id: 'overview', label: 'Overview', icon: BarChart3 },
               { id: 'properties', label: 'Properties', icon: Home },
-              { id: 'bookings', label: 'Bookings', icon: Calendar },
-              { id: 'reviews', label: 'Reviews', icon: MessageSquare }
+              { id: 'bookings', label: 'Bookings', icon: Calendar }
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -309,31 +298,7 @@ export default function OwnerDashboard() {
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl shadow-lg p-6">
-                <div className="flex items-center">
-                  <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-lg flex items-center justify-center">
-                    <DollarSign className="w-6 h-6 text-white" />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Monthly Revenue (Current Month)</p>
-                    <p className="text-2xl font-bold text-gray-900">₹{(stats.totalRevenueNum || 0).toLocaleString()}</p>
-                    <div className="mt-2 text-sm text-gray-600">
-                      {stats.monthlyBreakdown && stats.monthlyBreakdown.length > 0 ? (
-                        <div className="space-y-1">
-                          {stats.monthlyBreakdown.map(m => (
-                            <div key={m.month} className="flex justify-between">
-                              <span>{m.month}</span>
-                              <span>₹{m.amount.toLocaleString()}</span>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div>No paid months recorded yet.</div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
+              
 
               
               <div className="bg-white rounded-xl shadow-lg p-6">
@@ -380,9 +345,21 @@ export default function OwnerDashboard() {
                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                  {myPGs.map((pg) => (
                 <div key={pg.id} className="bg-white rounded-2xl shadow-lg p-6">
+                  {Array.isArray(pg.images) && pg.images.length > 0 && (
+                    <div className="mb-4 -mt-2 -mx-2">
+                      <div className="relative w-full h-40">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={pg.images[0]} alt={`${pg.pgName || pg.name} cover`} className="w-full h-40 object-cover rounded-xl" />
+                      </div>
+                    </div>
+                  )}
                   <div className="flex items-start justify-between mb-4">
                     <div>
-                      <h3 className="text-xl font-semibold text-gray-800">{pg.pgName || pg.name}</h3>
+                      <h3 className="text-xl font-semibold text-gray-800">
+                        <Link href={`/dashboard/owner/pg/${pg.id}/guests`} className="hover:underline hover:text-blue-700">
+                          {pg.pgName || pg.name}
+                        </Link>
+                      </h3>
                       <div className="flex items-center text-gray-600 mt-1">
                         <MapPin className="w-4 h-4 mr-1" />
                         <span className="text-sm">{pg.location}</span>
@@ -551,72 +528,7 @@ export default function OwnerDashboard() {
           </div>
         )}
 
-        {/* Reviews Tab */}
-        {activeTab === 'reviews' && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-gray-800">Reviews & Ratings</h2>
-              <div className="flex items-center space-x-4">
-                <div className="bg-white rounded-lg p-4 shadow-lg">
-                  <div className="flex items-center">
-                    <Star className="w-8 h-8 text-yellow-400 fill-current" />
-                    <div className="ml-3">
-                      <p className="text-2xl font-bold text-gray-900">4.5</p>
-                      <p className="text-sm text-gray-600">Average Rating</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-2xl shadow-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Recent Reviews</h3>
-              <div className="space-y-4">
-                {[
-                  {
-                    guest: 'Rahul Sharma',
-                    pg: 'Green Valley PG',
-                    rating: 5,
-                    review: 'Excellent facilities and very well maintained. The staff is very cooperative and the food is amazing.',
-                    date: '2 days ago'
-                  },
-                  {
-                    guest: 'Priya Singh',
-                    pg: 'Green Valley PG',
-                    rating: 4,
-                    review: 'Good location and clean rooms. WiFi speed could be better but overall satisfied.',
-                    date: '1 week ago'
-                  }
-                ].map((review, index) => (
-                  <div key={index} className="border-b border-gray-200 pb-4 last:border-b-0">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center mb-2">
-                          <h4 className="font-medium text-gray-900">{review.guest}</h4>
-                          <span className="mx-2 text-gray-400">•</span>
-                          <span className="text-sm text-gray-600">{review.pg}</span>
-                          <span className="mx-2 text-gray-400">•</span>
-                          <span className="text-sm text-gray-500">{review.date}</span>
-                        </div>
-                        <div className="flex items-center mb-2">
-                          {[...Array(5)].map((_, i) => (
-                            <Star
-                              key={i}
-                              className={`w-4 h-4 ${
-                                i < review.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
-                              }`}
-                            />
-                          ))}
-                        </div>
-                        <p className="text-gray-700">{review.review}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-                 )}
+        {/* Reviews Tab removed */}
        </div>
 
        {/* Delete Confirmation Modal */}

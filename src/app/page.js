@@ -15,13 +15,12 @@ export default function Home() {
               </div>
               <h1 className="text-2xl font-bold">PG Finder</h1>
             </div>
-            <nav className="hidden md:flex space-x-6">
+            <nav className="hidden md:flex space-x-6 flex-nowrap items-center">
               <a href="#features" className="hover:text-indigo-200 transition-colors">Features</a>
               <a href="#about" className="hover:text-indigo-200 transition-colors">About</a>
               <a href="#contact" className="hover:text-indigo-200 transition-colors">Contact</a>
-              <Link href="/login" className="bg-white/20 hover:bg-white/45 px-5 py-2 rounded-lg transition-all duration-100">
-                Sign In
-              </Link>
+              <Link href="/signup" className="hover:text-indigo-200 transition-colors">Sign Up</Link>
+              <Link href="/login" className="hover:text-indigo-200 transition-colors">Login</Link>
             </nav>
           </div>
         </div>

@@ -133,7 +133,7 @@ export default function PGsPage() {
         // Refresh properties to update availability
         await loadProperties();
       } else {
-        alert('Booking failed: ' + result.error);
+        alert(result.error || 'Booking failed');
       }
     } catch (error) {
       console.error('Error booking PG:', error);
