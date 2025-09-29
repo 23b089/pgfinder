@@ -125,21 +125,7 @@ export const completeStay = async (bookingId, userId) => {
 // Create a new booking (start as pending). Owner must accept to confirm.
 export const createBooking = async (bookingData) => {
   try {
-    // Enforce phone verification: require bookingData to indicate phoneVerified or ensure user has phoneNumber
-    try {
-      const { auth } = await import('./firebase');
-      const user = auth.currentUser;
-      const hasVerifiedPhone = !!(user && user.phoneNumber);
-      const allow = hasVerifiedPhone || bookingData.phoneVerified === true;
-      if (!allow) {
-        return { success: false, error: 'Phone verification required before booking.' };
-      }
-    } catch (e) {
-      // If auth lookup fails, be safe and require explicit flag
-      if (bookingData.phoneVerified !== true) {
-        return { success: false, error: 'Phone verification required before booking.' };
-      }
-    }
+    // Phone OTP verification removed per request: allow booking without verified phone
 
     // Prevent duplicate booking for the same PG by the same user if an active/ongoing booking exists
     try {
@@ -363,6 +349,26 @@ export const getUserNotifications = async (userId) => {
     return { success: true, notifications };
   } catch (error) {
     console.error('Get user notifications error:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+// Mark all notifications as read for a user
+export const markAllNotificationsAsRead = async (userId) => {
+  try {
+    const q = query(
+      collection(db, 'notifications'),
+      where('userId', '==', userId),
+      where('isRead', '==', false)
+    );
+    const snap = await getDocs(q);
+    if (snap.empty) return { success: true };
+    const batch = writeBatch(db);
+    snap.forEach(d => batch.update(doc(db, 'notifications', d.id), { isRead: true, updatedAt: serverTimestamp() }));
+    await batch.commit();
+    return { success: true };
+  } catch (error) {
+    console.error('Mark all notifications read error:', error);
     return { success: false, error: error.message };
   }
 };

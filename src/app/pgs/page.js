@@ -111,8 +111,27 @@ export default function PGsPage() {
       alert('Only users can book PGs');
       return;
     }
-    // Always route through OTP phone verification flow
-    router.push(`/pgs/${pg.id}/book`);
+    const occupants = 1;
+    const bookingData = {
+      userId: currentUser.id,
+      userName: currentUser.name || currentUser.displayName || currentUser.email,
+      propertyId: pg.id,
+      propertyName: pg.pgName || pg.name,
+      ownerId: pg.ownerId,
+      location: pg.location,
+      roomType: pg.roomType || pg.sharingType,
+      occupants,
+      rentAmount: pg.price,
+      checkIn: new Date().toISOString().split('T')[0],
+      checkOut: null
+    };
+    const res = await createBooking(bookingData);
+    if (res.success) {
+      alert('Booking request sent!');
+      router.push('/dashboard/user');
+    } else {
+      alert(res.error || 'Failed to create booking');
+    }
   };
 
   const getStatusColor = (status) => {
@@ -367,13 +386,13 @@ export default function PGsPage() {
                     </Link>
                     {currentUser?.role === 'user' && (
                       pg.availableSlots > 0 ? (
-                        <Link
-                          href={`/pgs/${pg.id}/book`}
+                        <button
+                          onClick={() => bookPG(pg)}
                           className="bg-green-500 text-white py-2 px-4 rounded-lg font-medium hover:bg-green-600 transition-colors flex items-center text-center"
                         >
                           <BookOpen className="w-4 h-4 mr-1" />
                           Book PG
-                        </Link>
+                        </button>
                       ) : (
                         <button
                           disabled

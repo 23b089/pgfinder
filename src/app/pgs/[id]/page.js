@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { getProperty } from '@/lib/properties';
+import { useAuth } from '@/contexts/AuthContext';
+import { createBooking } from '@/lib/bookings';
 
 export default function PGDetail() {
   const params = useParams();
@@ -11,6 +13,7 @@ export default function PGDetail() {
   const [pg, setPg] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const { currentUser } = useAuth();
 
   useEffect(() => {
     if (!id) return;
@@ -67,9 +70,36 @@ export default function PGDetail() {
         </div>
 
         {pg.availableSlots > 0 ? (
-          <Link href={`/pgs/${pg.id}/book`} className="w-full inline-flex justify-center bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all duration-300">
+          <button
+            onClick={async () => {
+              if (!currentUser) { alert('Please login to book'); return; }
+              if (currentUser.role !== 'user') { alert('Only users can book PGs'); return; }
+              const occupants = 1;
+              const data = {
+                userId: currentUser.id,
+                userName: currentUser.name || currentUser.displayName || currentUser.email,
+                propertyId: pg.id,
+                propertyName: pg.pgName || pg.name,
+                ownerId: pg.ownerId,
+                location: pg.location,
+                roomType: pg.roomType || pg.sharingType,
+                occupants,
+                rentAmount: pg.price,
+                checkIn: new Date().toISOString().split('T')[0],
+                checkOut: null
+              };
+              const res = await createBooking(data);
+              if (res.success) {
+                alert('Booking request sent!');
+                window.location.href = '/dashboard/user';
+              } else {
+                alert(res.error || 'Failed to create booking');
+              }
+            }}
+            className="w-full inline-flex justify-center bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all duration-300"
+          >
             Book Now
-          </Link>
+          </button>
         ) : (
           <button disabled className="w-full bg-gray-300 text-white px-6 py-3 rounded-xl font-semibold cursor-not-allowed">Full</button>
         )}
