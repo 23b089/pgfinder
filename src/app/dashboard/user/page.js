@@ -368,60 +368,79 @@ export default function UserDashboard() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       {/* Header */}
       <header className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white shadow-lg">
-        <div className="container mx-auto px-6 py-4">
+        <div className="container mx-auto px-4 sm:px-6 py-3 sm:py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-                <Users className="w-6 h-6" />
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                <Users className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold">PG Finder</h1>
-                <p className="text-sm text-indigo-100">User Dashboard</p>
+                <h1 className="text-lg sm:text-2xl font-bold">PG Finder</h1>
+                <p className="text-xs sm:text-sm text-indigo-100">User Dashboard</p>
                 {currentUser && (
-                  <p className="text-xs text-indigo-200">Welcome, {currentUser.fullName}</p>
+                  <p className="text-xs text-indigo-200 hidden sm:block">Welcome, {currentUser.fullName}</p>
                 )}
               </div>
             </div>
-            <nav className="hidden md:flex items-center space-x-6">
+            
+            {/* Desktop Navigation */}
+            <nav className="hidden md:flex items-center space-x-4 lg:space-x-6">
               <button 
                 onClick={handleLogout}
-                className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition-all duration-300 flex items-center"
+                className="bg-white/20 hover:bg-white/30 px-3 lg:px-4 py-2 rounded-lg transition-all duration-300 flex items-center text-sm"
               >
                 <LogOut className="w-4 h-4 mr-1" />
                 Logout
               </button>
               <button
                 onClick={handleDeleteAccount}
-                className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg transition-all duration-300 flex items-center"
+                className="bg-red-600 hover:bg-red-700 text-white px-2 lg:px-3 py-2 rounded-lg transition-all duration-300 flex items-center text-sm"
               >
                 Delete Account
               </button>
             </nav>
+            
+            {/* Mobile Menu Button */}
+            <div className="md:hidden flex items-center space-x-2">
+              <button 
+                onClick={handleLogout}
+                className="bg-white/20 hover:bg-white/30 p-2 rounded-lg transition-all duration-300"
+                title="Logout"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+              <button
+                onClick={handleDeleteAccount}
+                className="bg-red-600 hover:bg-red-700 text-white p-2 rounded-lg transition-all duration-300"
+                title="Delete Account"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <div className="container mx-auto px-6 py-8">
+      <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-8 pb-20 md:pb-4">
         {/* Welcome Section */}
-        <div className="bg-white rounded-2xl shadow-xl p-6 mb-8">
-          <h2 className="text-3xl font-bold text-gray-800 mb-2">Welcome back, {currentUser?.fullName || 'User'}! 👋</h2>
-          <p className="text-gray-600">Manage your PG bookings and view your stay history.</p>
+        <div className="bg-white rounded-2xl shadow-xl p-4 sm:p-6 mb-6 sm:mb-8">
+          <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-800 mb-2">Welcome back, {currentUser?.fullName || 'User'}! 👋</h2>
+          <p className="text-sm sm:text-base text-gray-600">Manage your PG bookings and view your stay history.</p>
         </div>
 
 
-        {/* Tabs */}
-        <div className="bg-white rounded-2xl shadow-xl mb-8">
+        {/* Desktop Tabs */}
+        <div className="bg-white rounded-2xl shadow-xl mb-6 sm:mb-8 hidden md:block">
           <div className="border-b border-gray-200">
             <nav className="flex space-x-8 px-6">
-                             {[
-                 { id: 'overview', name: 'Overview', icon: Home },
-                 { id: 'search', name: 'Search PGs', icon: Search },
-                 { id: 'bookings', name: 'Bookings', icon: Calendar },
-                 { id: 'history', name: 'Stay History', icon: Clock },
-                 // Rent Due tab removed
-                 { id: 'notifications', name: 'Notifications', icon: Bell }
-               ].map((tab) => {
+              {[
+                { id: 'overview', name: 'Overview', icon: Home },
+                { id: 'search', name: 'Search PGs', icon: Search },
+                { id: 'bookings', name: 'Bookings', icon: Calendar },
+                { id: 'history', name: 'Stay History', icon: Clock },
+                { id: 'notifications', name: 'Notifications', icon: Bell }
+              ].map((tab) => {
                 const Icon = tab.icon;
                 return (
                   <button
@@ -451,62 +470,51 @@ export default function UserDashboard() {
                     }`}
                   >
                     <Icon className="w-4 h-4" />
-                    <span className="flex items-center gap-2">
-                      <span>{tab.name}</span>
-                      {/* Notification badge removed per request */}
-                    </span>
+                    <span>{tab.name}</span>
                   </button>
                 );
               })}
             </nav>
           </div>
+        
+        {/* Mobile Tab Content Area */}
+        <div className="bg-white rounded-2xl shadow-xl mb-6 md:hidden">
+          <div className="p-4">
+            <h3 className="text-lg font-semibold text-gray-800 mb-2 flex items-center">
+              {(() => {
+                const currentTabData = [
+                  { id: 'overview', name: 'Overview', icon: Home },
+                  { id: 'search', name: 'Search PGs', icon: Search },
+                  { id: 'bookings', name: 'Bookings', icon: Calendar },
+                  { id: 'history', name: 'Stay History', icon: Clock },
+                  { id: 'notifications', name: 'Notifications', icon: Bell }
+                ].find(tab => tab.id === activeTab);
+                const Icon = currentTabData?.icon;
+                return (
+                  <>
+                    {Icon && <Icon className="w-5 h-5 mr-2 text-indigo-600" />}
+                    {currentTabData?.name}
+                  </>
+                );
+              })()}
+            </h3>
+          </div>
+        </div>
 
-          {/* Tab Content */}
-          <div className="p-6">
+        </div>
+
+        {/* Tab Content Container - Works for both desktop and mobile */}
+        <div className="bg-white rounded-2xl shadow-xl mb-6 sm:mb-8">
+          <div className="p-4 sm:p-6">
             {/* Overview Tab */}
             {activeTab === 'overview' && (
               <div className="space-y-6">
-                <div>
-                  <h3 className="text-xl font-bold text-gray-800 mb-4">Recent Activity</h3>
-                  <div className="space-y-4">
-                    {bookings.slice(0, 3).map((booking) => (
-                      <div key={booking.id} className="bg-gray-50 rounded-lg p-4">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h4 className="font-semibold text-gray-800">{booking.pgName}</h4>
-                            <p className="text-sm text-gray-600">{booking.checkIn} - {booking.checkOut || '—'}</p>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}>
-                              {booking.status}
-                            </span>
-                            <div className="flex items-center">
-                              <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                              <span className="ml-1 text-sm">{booking.rating}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                <div className="text-center py-12">
+                  <h3 className="text-xl font-bold text-gray-800 mb-4">Welcome to Your Dashboard</h3>
+                  <p className="text-gray-600">Use the navigation below to explore PGs, manage bookings, and more.</p>
                 </div>
-
-                                 <div>
-                   <h3 className="text-xl font-bold text-gray-800 mb-4">Quick Actions</h3>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                     <button 
-                       onClick={() => setActiveTab('search')}
-                       className="bg-indigo-50 text-indigo-700 p-4 rounded-lg hover:bg-indigo-100 transition-colors"
-                     >
-                       <Search className="w-6 h-6 mx-auto mb-2" />
-                       <span className="text-sm font-medium">Search PGs</span>
-                     </button>
-                     {/* Receipts quick action removed with payments */}
-                    {/* Favorites quick action removed per request */}
-                   </div>
-                                  </div>
-               </div>
-             )}
+              </div>
+            )}
 
              {/* Search Tab */}
              {activeTab === 'search' && (
@@ -516,25 +524,25 @@ export default function UserDashboard() {
                    <p className="text-gray-600 mb-6">Find your perfect PG accommodation with advanced filters.</p>
                    
                    {/* Search Form */}
-                   <div className="bg-gray-50 rounded-xl p-6 mb-6">
-                     <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
+                   <div className="bg-gray-50 rounded-lg p-3 sm:p-4 mb-4">
+                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2 sm:gap-3 mb-3">
                        <div className="relative">
-                         <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                         <MapPin className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                          <input
                            type="text"
                            placeholder="Location..."
                            value={searchFilters.location}
                            onChange={(e) => setSearchFilters({...searchFilters, location: e.target.value})}
-                           className="w-full pl-10 pr-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-indigo-200 focus:border-indigo-500 focus:outline-none text-black bg-white hover:bg-gray-50 transition-all duration-300"
+                           className="w-full pl-8 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 focus:outline-none text-black bg-white hover:bg-gray-50 transition-all duration-300"
                          />
                        </div>
                        
                        <select
                          value={searchFilters.gender}
                          onChange={(e) => setSearchFilters({...searchFilters, gender: e.target.value})}
-                         className="w-full pl-4 pr-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-indigo-200 focus:border-indigo-500 focus:border-indigo-500 focus:outline-none text-black bg-white hover:bg-gray-50 transition-all duration-300"
+                         className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 focus:outline-none text-black bg-white hover:bg-gray-50 transition-all duration-300"
                        >
-                         <option value="">Select Gender</option>
+                         <option value="">Gender</option>
                          <option value="Male">Male</option>
                          <option value="Female">Female</option>
                          <option value="Unisex">Unisex</option>
@@ -543,35 +551,39 @@ export default function UserDashboard() {
                        <input
                          type="number"
                          min="0"
-                         placeholder="Min budget"
+                         placeholder="Min ₹"
                          value={searchFilters.minPrice}
                          onChange={(e) => setSearchFilters({...searchFilters, minPrice: e.target.value})}
-                         className="w-full pl-4 pr-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-indigo-200 focus:border-indigo-500 focus:outline-none text-black bg-white hover:bg-gray-50 transition-all duration-300"
+                         className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 focus:outline-none text-black bg-white hover:bg-gray-50 transition-all duration-300"
                        />
 
                        <input
                          type="number"
                          min="0"
-                         placeholder="Max budget"
+                         placeholder="Max ₹"
                          value={searchFilters.maxPrice}
                          onChange={(e) => setSearchFilters({...searchFilters, maxPrice: e.target.value})}
-                         className="w-full pl-4 pr-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-indigo-200 focus:border-indigo-500 focus:outline-none text-black bg-white hover:bg-gray-50 transition-all duration-300"
+                         className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 focus:outline-none text-black bg-white hover:bg-gray-50 transition-all duration-300"
                        />
 
                        <select
                          value={searchFilters.roomType}
                          onChange={(e) => setSearchFilters({...searchFilters, roomType: e.target.value})}
-                         className="w-full pl-4 pr-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-indigo-200 focus:border-indigo-500 focus:outline-none text-black bg-white hover:bg-gray-50 transition-all duration-300"
+                         className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 focus:outline-none text-black bg-white hover:bg-gray-50 transition-all duration-300"
                        >
                          <option value="">Room Type</option>
-                         <option value="Single Room">Single Room</option>
-                         <option value="Single Sharing">Single Sharing</option>
-                         <option value="Double Sharing">Double Sharing</option>
-                         <option value="Triple Sharing">Triple Sharing</option>
+                         <option value="Single Room">Single</option>
+                         <option value="Single Sharing">1 Sharing</option>
+                         <option value="Double Sharing">2 Sharing</option>
+                         <option value="Triple Sharing">3 Sharing</option>
+                         <option value="Quad Sharing">4 Sharing</option>
+                         <option value="Penta Sharing (5)">5 Sharing</option>
+                         <option value="Hexa Sharing (6)">6 Sharing</option>
+                         <option value="Septa Sharing (7)">7 Sharing</option>
                        </select>
                      </div>
                      
-                     <div className="flex gap-4">
+                     <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                        <button 
                          onClick={() => {
                            // Load properties for feed when search is clicked
@@ -579,10 +591,10 @@ export default function UserDashboard() {
                              loadPropertiesForFeed();
                            }
                          }}
-                         className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 flex items-center"
+                         className="flex-1 sm:flex-none bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-2 rounded-lg font-medium hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 flex items-center justify-center text-sm"
                        >
-                         <Search className="w-5 h-5 mr-2" />
-                         {properties.length === 0 ? 'Load PGs' : 'Search PGs'}
+                         <Search className="w-4 h-4 mr-2" />
+                         {properties.length === 0 ? 'Load PGs' : 'Search'}
                        </button>
                        <button 
                          onClick={() => setSearchFilters({
@@ -593,9 +605,9 @@ export default function UserDashboard() {
                            roomType: '',
                            foodIncluded: ''
                          })}
-                         className="bg-gray-500 text-white px-6 py-3 rounded-xl font-semibold hover:bg-gray-600 transition-all duration-300"
+                         className="flex-1 sm:flex-none bg-gray-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-gray-600 transition-all duration-300 text-sm"
                        >
-                         Clear Filters
+                         Clear
                        </button>
                      </div>
                    </div>
@@ -675,6 +687,42 @@ export default function UserDashboard() {
                                      +{pg.amenities.length - 3} more
                                    </span>
                                  )}
+                               </div>
+                             </div>
+
+                             {/* Owner Contact Information */}
+                             <div className="mb-4 p-3 bg-white rounded-lg border border-gray-200">
+                               <h5 className="text-sm font-semibold text-gray-700 mb-2">Contact Owner</h5>
+                               <div className="flex items-center justify-between">
+                                 <div className="text-sm text-gray-600">
+                                   <p className="font-medium">{pg.ownerName || 'PG Owner'}</p>
+                                   {pg.ownerPhone && (
+                                     <p className="text-xs text-gray-500">📱 {pg.ownerPhone}</p>
+                                   )}
+                                 </div>
+                                 <div className="flex gap-2">
+                                   {pg.ownerPhone && (
+                                     <a 
+                                       href={`tel:${pg.ownerPhone}`}
+                                       className="bg-green-100 text-green-700 p-2 rounded-lg hover:bg-green-200 transition-colors"
+                                       title="Call Owner"
+                                     >
+                                       <Phone className="w-4 h-4" />
+                                     </a>
+                                   )}
+                                   {pg.ownerEmail && (
+                                     <a 
+                                       href={`mailto:${pg.ownerEmail}?subject=Enquiry about ${pg.pgName || pg.name}&body=Hi, I'm interested in your PG property "${pg.pgName || pg.name}" located at ${pg.location}. Could you please provide more details?`}
+                                       className="bg-blue-100 text-blue-700 p-2 rounded-lg hover:bg-blue-200 transition-colors"
+                                       title="Email Owner"
+                                     >
+                                       <Mail className="w-4 h-4" />
+                                     </a>
+                                   )}
+                                   {(!pg.ownerPhone && !pg.ownerEmail) && (
+                                     <span className="text-xs text-gray-400 px-2 py-1">Contact info not available</span>
+                                   )}
+                                 </div>
                                </div>
                              </div>
 
@@ -887,33 +935,25 @@ export default function UserDashboard() {
                             {!notification.isRead && (
                               <span className="w-2 h-2 bg-indigo-500 rounded-full"></span>
                             )}
-                            <button 
-                              onClick={async () => {
-                                try {
-                                  if (!notification.isRead) {
+                            {!notification.isRead && (
+                              <button 
+                                onClick={async () => {
+                                  try {
                                     const res = await markNotificationAsRead(notification.id);
                                     if (res.success) {
                                       // update local state
                                       setNotifications(prev => prev.map(n => n.id === notification.id ? { ...n, isRead: true } : n));
                                       setUnreadCount(c => Math.max(0, c - 1));
                                     }
-                                  } else {
-                                    // lazy toggle to unread
-                                    const { markNotificationAsUnread } = await import('@/lib/bookings');
-                                    const res = await markNotificationAsUnread(notification.id);
-                                    if (res.success) {
-                                      setNotifications(prev => prev.map(n => n.id === notification.id ? { ...n, isRead: false } : n));
-                                      setUnreadCount(c => c + 1);
-                                    }
+                                  } catch (err) {
+                                    console.error('Mark notification read error:', err);
                                   }
-                                } catch (err) {
-                                  console.error('Toggle notification read error:', err);
-                                }
-                              }}
-                              className="text-indigo-600 hover:text-indigo-700 text-sm"
-                            >
-                              {notification.isRead ? 'Mark as unread' : 'Mark as read'}
-                            </button>
+                                }}
+                                className="text-indigo-600 hover:text-indigo-700 text-sm"
+                              >
+                                Mark as read
+                              </button>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -926,6 +966,57 @@ export default function UserDashboard() {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Mobile Bottom Navigation */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
+        <nav className="flex justify-around items-center py-3 px-2">
+          {[
+            { id: 'overview', name: 'Overview', icon: Home },
+            { id: 'search', name: 'Search', icon: Search },
+            { id: 'bookings', name: 'Bookings', icon: Calendar },
+            { id: 'history', name: 'History', icon: Clock },
+            { id: 'notifications', name: 'Alerts', icon: Bell }
+          ].map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  if (tab.id === 'notifications') {
+                    setUnreadCount(0);
+                    (async () => {
+                      try {
+                        if (!currentUser) return;
+                        const { markAllNotificationsAsRead } = await import('@/lib/bookings');
+                        const res = await markAllNotificationsAsRead(currentUser.id);
+                        if (res.success) {
+                          setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+                        }
+                      } catch (err) {
+                        console.error('Mark all read on tab open failed:', err);
+                      }
+                    })();
+                  }
+                }}
+                className={`flex items-center justify-center p-3 min-w-0 flex-1 relative transition-colors ${
+                  activeTab === tab.id
+                    ? 'text-indigo-600'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+                title={tab.name}
+              >
+                <Icon className={`w-6 h-6 ${activeTab === tab.id ? 'text-indigo-600' : ''}`} />
+                {tab.id === 'notifications' && unreadCount > 0 && (
+                  <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </div>
+                )}
+              </button>
+            );
+          })}
+        </nav>
       </div>
     </div>
   );

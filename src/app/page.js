@@ -7,14 +7,16 @@ export default function Home() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       {/* Header */}
       <header className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white shadow-lg">
-        <div className="container mx-auto px-6 py-4">
+        <div className="container mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-                <Users className="w-6 h-6" />
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                <Users className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
-              <h1 className="text-2xl font-bold">PG Finder</h1>
+              <h1 className="text-lg sm:text-2xl font-bold">PG Finder</h1>
             </div>
+            
+            {/* Desktop Navigation */}
             <nav className="hidden md:flex space-x-6 flex-nowrap items-center">
               <a href="#features" className="hover:text-indigo-200 transition-colors">Features</a>
               <a href="#about" className="hover:text-indigo-200 transition-colors">About</a>
@@ -22,58 +24,76 @@ export default function Home() {
               <Link href="/signup" className="hover:text-indigo-200 transition-colors">Sign Up</Link>
               <Link href="/login" className="hover:text-indigo-200 transition-colors">Login</Link>
             </nav>
+            
+            {/* Mobile Navigation Button */}
+            <button className="md:hidden p-2 rounded-lg hover:bg-white/10 transition-colors">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
           </div>
+          
+          {/* Mobile Navigation Menu (Hidden by default - would need JS to toggle) */}
+          <nav className="md:hidden mt-4 pb-4 border-t border-white/20 pt-4 hidden">
+            <div className="flex flex-col space-y-3">
+              <a href="#features" className="hover:text-indigo-200 transition-colors py-2">Features</a>
+              <a href="#about" className="hover:text-indigo-200 transition-colors py-2">About</a>
+              <a href="#contact" className="hover:text-indigo-200 transition-colors py-2">Contact</a>
+              <Link href="/signup" className="hover:text-indigo-200 transition-colors py-2">Sign Up</Link>
+              <Link href="/login" className="hover:text-indigo-200 transition-colors py-2">Login</Link>
+            </div>
+          </nav>
         </div>
       </header>
 
       {/* Hero Section */}
-      <section className="relative py-20 px-6">
+      <section className="relative py-12 sm:py-20 px-4 sm:px-6">
         <div className="container mx-auto text-center">
           <div className="max-w-4xl mx-auto">
-            <h2 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-6">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-4 sm:mb-6 leading-tight">
               Find Your Perfect PG
             </h2>
-            <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
+            <p className="text-base sm:text-lg md:text-xl text-gray-600 mb-6 sm:mb-8 max-w-2xl mx-auto px-4">
               Discover comfortable, affordable, and convenient paying guest accommodations near you. 
               From budget-friendly options to premium stays, we&apos;ve got you covered.
             </p>
             
             {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
-              <Link href="/pgs" className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-8 py-4 rounded-xl font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg text-lg flex items-center">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center mb-8 sm:mb-12 px-4">
+              <Link href="/pgs" className="w-full sm:w-auto bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg text-base sm:text-lg flex items-center justify-center">
                 Browse PGs
-                <ArrowRight className="w-5 h-5 ml-2" />
+                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2" />
               </Link>
-              <Link href="/login" className="bg-white text-indigo-600 px-8 py-4 rounded-xl font-semibold hover:bg-gray-50 transition-all duration-300 transform hover:scale-105 shadow-lg text-lg border-2 border-indigo-600">
+              <Link href="/login" className="w-full sm:w-auto bg-white text-indigo-600 px-6 sm:px-8 py-3 sm:py-4 rounded-xl font-semibold hover:bg-gray-50 transition-all duration-300 transform hover:scale-105 shadow-lg text-base sm:text-lg border-2 border-indigo-600">
                 Sign In
               </Link>
             </div>
             
             {/* Search Preview */}
-            <div className="bg-white rounded-2xl shadow-xl p-6 max-w-3xl mx-auto opacity-75">
-              <div className="flex flex-col md:flex-row gap-4">
-                <div className="flex-1 relative">
-                  <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <div className="bg-white rounded-2xl shadow-xl p-4 sm:p-6 max-w-3xl mx-auto opacity-75">
+              <div className="flex flex-col gap-3 sm:gap-4">
+                <div className="relative">
+                  <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 sm:w-5 sm:h-5" />
                   <input
                     type="text"
                     placeholder="Enter location, area, or landmark..."
                     disabled
-                    className="w-full pl-10 pr-4 py-4 border-2 border-gray-200 rounded-xl text-lg bg-gray-100 text-gray-500 cursor-not-allowed"
+                    className="w-full pl-8 sm:pl-10 pr-4 py-3 sm:py-4 border-2 border-gray-200 rounded-xl text-sm sm:text-lg bg-gray-100 text-gray-500 cursor-not-allowed"
                   />
                 </div>
-                <div className="flex-1 relative">
-                  <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <select disabled className="w-full pl-10 pr-4 py-4 border-2 border-gray-200 rounded-xl text-lg bg-gray-100 text-gray-500 cursor-not-allowed">
+                <div className="relative">
+                  <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 sm:w-5 sm:h-5" />
+                  <select disabled className="w-full pl-8 sm:pl-10 pr-4 py-3 sm:py-4 border-2 border-gray-200 rounded-xl text-sm sm:text-lg bg-gray-100 text-gray-500 cursor-not-allowed">
                     <option>Select Gender</option>
                   </select>
                 </div>
-                <button disabled className="bg-gray-300 text-gray-500 px-8 py-4 rounded-xl font-semibold cursor-not-allowed text-lg">
-                  <Search className="w-5 h-5 inline mr-2" />
+                <button disabled className="bg-gray-300 text-gray-500 px-6 sm:px-8 py-3 sm:py-4 rounded-xl font-semibold cursor-not-allowed text-sm sm:text-lg w-full">
+                  <Search className="w-4 h-4 sm:w-5 sm:h-5 inline mr-2" />
                   Search PGs
                 </button>
               </div>
-              <div className="text-center mt-4">
-                <p className="text-gray-500 text-sm">Sign in to access the full search functionality</p>
+              <div className="text-center mt-3 sm:mt-4">
+                <p className="text-gray-500 text-xs sm:text-sm">Sign in to access the full search functionality</p>
               </div>
             </div>
           </div>

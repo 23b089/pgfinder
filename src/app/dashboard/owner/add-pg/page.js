@@ -25,7 +25,10 @@ const sharingTypes = [
   'Single Sharing',
   'Double Sharing', 
   'Triple Sharing',
-  'Quad Sharing'
+  'Quad Sharing',
+  'Penta Sharing (5)',
+  'Hexa Sharing (6)',
+  'Septa Sharing (7)'
 ];
 
 const availableFeatures = [
@@ -177,7 +180,16 @@ export default function AddPG() {
         totalRooms: parseInt(formData.totalRooms),
         // Initialize slots based on totalRooms * roomCapacity (roomCapacity inferred from sharingType)
         roomType: formData.sharingType,
-        roomCapacity: formData.sharingType && formData.sharingType.toLowerCase().includes('double') ? 2 : (formData.sharingType && formData.sharingType.toLowerCase().includes('triple') ? 3 : 1),
+        roomCapacity: (() => {
+          const sharingType = formData.sharingType.toLowerCase();
+          if (sharingType.includes('double')) return 2;
+          if (sharingType.includes('triple')) return 3;
+          if (sharingType.includes('quad')) return 4;
+          if (sharingType.includes('penta') || sharingType.includes('(5)')) return 5;
+          if (sharingType.includes('hexa') || sharingType.includes('(6)')) return 6;
+          if (sharingType.includes('septa') || sharingType.includes('(7)')) return 7;
+          return 1; // Default for single room/single sharing
+        })(),
         availableRooms: parseInt(formData.totalRooms),
         // Map features to amenities for display
         amenities: [

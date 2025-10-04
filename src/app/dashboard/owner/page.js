@@ -228,36 +228,51 @@ export default function OwnerDashboard() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       {/* Header */}
       <header className="bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 text-white shadow-lg">
-        <div className="container mx-auto px-6 py-4">
+        <div className="container mx-auto px-4 sm:px-6 py-3 sm:py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-                <Home className="w-6 h-6" />
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                <Home className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold">PG Finder</h1>
-                <p className="text-sm text-green-100">Owner Dashboard</p>
+                <h1 className="text-lg sm:text-2xl font-bold">PG Finder</h1>
+                <p className="text-xs sm:text-sm text-green-100 hidden sm:block">Owner Dashboard</p>
               </div>
             </div>
-            <nav className="hidden md:flex items-center space-x-6">
-              <Link href="#" className="hover:text-green-200 transition-colors flex items-center">
+            
+            {/* Desktop Navigation */}
+            <nav className="hidden md:flex items-center space-x-4 lg:space-x-6">
+              <Link href="#" className="hover:text-green-200 transition-colors flex items-center text-sm">
                 <Settings className="w-4 h-4 mr-1" />
                 Settings
               </Link>
-              <button onClick={handleDeleteAccount} className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg transition-all duration-300">
+              <button onClick={handleDeleteAccount} className="bg-red-600 hover:bg-red-700 text-white px-2 lg:px-3 py-2 rounded-lg transition-all duration-300 text-sm">
                 Delete Account
               </button>
-              <Link href="/" className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition-all duration-300 flex items-center">
+              <Link href="/" className="bg-white/20 hover:bg-white/30 px-3 lg:px-4 py-2 rounded-lg transition-all duration-300 flex items-center text-sm">
                 <LogOut className="w-4 h-4 mr-1" />
                 Logout
               </Link>
             </nav>
+            
+            {/* Mobile Navigation */}
+            <div className="md:hidden flex items-center space-x-2">
+              <Link href="#" className="p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-all" title="Settings">
+                <Settings className="w-4 h-4" />
+              </Link>
+              <button onClick={handleDeleteAccount} className="p-2 bg-red-600 hover:bg-red-700 rounded-lg transition-all" title="Delete Account">
+                <Trash2 className="w-4 h-4" />
+              </button>
+              <Link href="/" className="p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-all" title="Logout">
+                <LogOut className="w-4 h-4" />
+              </Link>
+            </div>
           </div>
         </div>
       </header>
 
-      {/* Navigation Tabs */}
-      <nav className="bg-white border-b border-gray-200 px-6">
+      {/* Desktop Navigation Tabs */}
+      <nav className="bg-white border-b border-gray-200 px-6 hidden md:block">
         <div className="container mx-auto">
           <div className="flex space-x-8">
             {[
@@ -292,7 +307,30 @@ export default function OwnerDashboard() {
         </div>
       </nav>
 
-      <div className="container mx-auto px-6 py-8">
+      {/* Mobile Section Header */}
+      <div className="md:hidden bg-white border-b border-gray-200 px-4 py-3">
+        <div className="flex items-center">
+          {(() => {
+            const currentTabData = [
+              { id: 'overview', label: 'Overview', icon: BarChart3 },
+              { id: 'properties', label: 'Properties', icon: Home },
+              { id: 'bookings', label: 'Bookings', icon: Calendar }
+            ].find(tab => tab.id === activeTab);
+            const Icon = currentTabData?.icon;
+            return (
+              <>
+                {Icon && <Icon className="w-5 h-5 mr-2 text-green-600" />}
+                <span className="text-lg font-semibold text-gray-800">{currentTabData?.label}</span>
+                {activeTab === 'bookings' && bookingBadgeCount > 0 && (
+                  <span className="ml-2 text-xs bg-red-500 text-white px-2 py-1 rounded-full">{bookingBadgeCount}</span>
+                )}
+              </>
+            );
+          })()}
+        </div>
+      </div>
+
+      <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-8 pb-20 md:pb-8">
         {/* Overview Tab */}
         {activeTab === 'overview' && (
           <div className="space-y-8">
@@ -458,16 +496,19 @@ export default function OwnerDashboard() {
         {/* Bookings Tab */}
         {activeTab === 'bookings' && (
           <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            {/* Header and Filters - Mobile Responsive */}
+            <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
               <h2 className="text-2xl font-bold text-gray-800">Recent Bookings</h2>
-              <div className="flex space-x-4">
-                <select className="px-4 py-2 bg-white border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+              
+              {/* Filters Container */}
+              <div className="flex flex-col space-y-3 md:flex-row md:space-y-0 md:space-x-4">
+                <select className="w-full md:w-auto px-4 py-2 bg-white border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
                   <option>All Properties</option>
                   {myPGs.map(pg => (
                     <option key={pg.id} value={pg.id}>{pg.pgName || pg.name}</option>
                   ))}
                 </select>
-                <select className="px-4 py-2 bg-white border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                <select className="w-full md:w-auto px-4 py-2 bg-white border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
                   <option>All Status</option>
                   <option>Confirmed</option>
                   <option>Pending</option>
@@ -487,65 +528,147 @@ export default function OwnerDashboard() {
                 <p>No bookings found.</p>
               </div>
             ) : (
-              <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Guest</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Property</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Room Type</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check-in</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {bookings.map((booking) => (
-                        <tr key={booking.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div>
-                              <div className="text-sm font-medium text-gray-900">{booking.userName}</div>
-                              <div className="text-sm text-gray-500">{booking.userPhone || 'N/A'}</div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{booking.propertyName}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{booking.roomType}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{new Date(booking.checkIn).toLocaleDateString()}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">₹{booking.rentAmount?.toLocaleString?.() || booking.rentAmount} <span className="text-xs text-gray-500">/head</span></td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              booking.status === 'confirmed' 
-                                ? 'bg-green-100 text-green-800'
-                                : booking.status === 'pending'
-                                ? 'bg-yellow-100 text-yellow-800'
-                                : 'bg-red-100 text-red-800'
-                            }`}>
-                              {booking.status === 'confirmed' && <CheckCircle className="w-3 h-3 mr-1" />}
-                              {booking.status === 'pending' && <Clock className="w-3 h-3 mr-1" />}
-                              {booking.status === 'cancelled' && <XCircle className="w-3 h-3 mr-1" />}
-                              {booking.status}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <div className="flex items-center space-x-2">
-                              {booking.status === 'pending' && (
-                                <>
-                                  <button onClick={() => handleAccept(booking.id)} className="bg-green-600 text-white px-3 py-1 rounded-lg hover:bg-green-700">Accept</button>
-                                  <button onClick={() => handleReject(booking.id)} className="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600">Reject</button>
-                                </>
-                              )}
-                              {/* Payment features removed */}
-                              <button className="text-indigo-600 hover:text-indigo-700">
-                                <Eye className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </td>
+              <div className="space-y-4">
+                {/* Desktop Table View - Hidden on Mobile */}
+                <div className="hidden md:block bg-white rounded-2xl shadow-lg overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Guest</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Property</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Room Type</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check-in</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {bookings.map((booking) => (
+                          <tr key={booking.id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div>
+                                <div className="text-sm font-medium text-gray-900">{booking.userName}</div>
+                                <div className="text-sm text-gray-500">{booking.userPhone || 'N/A'}</div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{booking.propertyName}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{booking.roomType}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{new Date(booking.checkIn).toLocaleDateString()}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">₹{booking.rentAmount?.toLocaleString?.() || booking.rentAmount} <span className="text-xs text-gray-500">/head</span></td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                booking.status === 'confirmed' 
+                                  ? 'bg-green-100 text-green-800'
+                                  : booking.status === 'pending'
+                                  ? 'bg-yellow-100 text-yellow-800'
+                                  : 'bg-red-100 text-red-800'
+                              }`}>
+                                {booking.status === 'confirmed' && <CheckCircle className="w-3 h-3 mr-1" />}
+                                {booking.status === 'pending' && <Clock className="w-3 h-3 mr-1" />}
+                                {booking.status === 'cancelled' && <XCircle className="w-3 h-3 mr-1" />}
+                                {booking.status}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                              <div className="flex items-center space-x-2">
+                                {booking.status === 'pending' && (
+                                  <>
+                                    <button onClick={() => handleAccept(booking.id)} className="bg-green-600 text-white px-3 py-1 rounded-lg hover:bg-green-700">Accept</button>
+                                    <button onClick={() => handleReject(booking.id)} className="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600">Reject</button>
+                                  </>
+                                )}
+                                {/* Payment features removed */}
+                                <button className="text-indigo-600 hover:text-indigo-700">
+                                  <Eye className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Mobile Card View - Shown on Mobile */}
+                <div className="md:hidden space-y-4">
+                  {bookings.map((booking) => (
+                    <div key={booking.id} className="bg-white rounded-2xl shadow-lg p-4 border border-gray-100">
+                      {/* Guest Info */}
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <h3 className="font-semibold text-gray-900 text-lg">{booking.userName}</h3>
+                          <p className="text-gray-600 text-sm">{booking.userPhone || 'N/A'}</p>
+                        </div>
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                          booking.status === 'confirmed' 
+                            ? 'bg-green-100 text-green-800'
+                            : booking.status === 'pending'
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {booking.status === 'confirmed' && <CheckCircle className="w-3 h-3 mr-1" />}
+                          {booking.status === 'pending' && <Clock className="w-3 h-3 mr-1" />}
+                          {booking.status === 'cancelled' && <XCircle className="w-3 h-3 mr-1" />}
+                          {booking.status}
+                        </span>
+                      </div>
+
+                      {/* Property Details */}
+                      <div className="grid grid-cols-2 gap-3 mb-4">
+                        <div>
+                          <p className="text-xs text-gray-500 uppercase tracking-wide">Property</p>
+                          <p className="text-sm font-medium text-gray-900">{booking.propertyName}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 uppercase tracking-wide">Room Type</p>
+                          <p className="text-sm font-medium text-gray-900">{booking.roomType}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 uppercase tracking-wide">Check-in</p>
+                          <p className="text-sm font-medium text-gray-900">{new Date(booking.checkIn).toLocaleDateString()}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 uppercase tracking-wide">Amount</p>
+                          <p className="text-sm font-medium text-gray-900">₹{booking.rentAmount?.toLocaleString?.() || booking.rentAmount} <span className="text-xs text-gray-500">/head</span></p>
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex items-center justify-between">
+                        {booking.status === 'pending' ? (
+                          <div className="flex space-x-2 flex-1">
+                            <button 
+                              onClick={() => handleAccept(booking.id)} 
+                              className="flex-1 bg-green-600 text-white py-3 px-4 rounded-xl font-semibold hover:bg-green-700 transition-colors text-center min-h-[48px] flex items-center justify-center"
+                            >
+                              <CheckCircle className="w-5 h-5 mr-2" />
+                              Accept
+                            </button>
+                            <button 
+                              onClick={() => handleReject(booking.id)} 
+                              className="flex-1 bg-red-500 text-white py-3 px-4 rounded-xl font-semibold hover:bg-red-600 transition-colors text-center min-h-[48px] flex items-center justify-center"
+                            >
+                              <XCircle className="w-5 h-5 mr-2" />
+                              Reject
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex-1 flex justify-center">
+                            <p className="text-sm text-gray-500">
+                              {booking.status === 'confirmed' ? 'Booking confirmed' : 'Booking cancelled'}
+                            </p>
+                          </div>
+                        )}
+                        
+                        <button className="ml-3 p-3 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-xl transition-colors min-h-[48px] min-w-[48px] flex items-center justify-center">
+                          <Eye className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
@@ -586,6 +709,43 @@ export default function OwnerDashboard() {
            </div>
          </div>
        )}
+
+      {/* Mobile Bottom Navigation */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
+        <nav className="flex justify-around items-center py-3 px-2">
+          {[
+            { id: 'overview', label: 'Overview', icon: BarChart3 },
+            { id: 'properties', label: 'Properties', icon: Home },
+            { id: 'bookings', label: 'Bookings', icon: Calendar }
+          ].map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  if (tab.id === 'bookings') {
+                    setBookingBadgeCount(0);
+                  }
+                }}
+                className={`flex items-center justify-center p-3 min-w-0 flex-1 relative transition-colors ${
+                  activeTab === tab.id
+                    ? 'text-green-600'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+                title={tab.label}
+              >
+                <Icon className={`w-6 h-6 ${activeTab === tab.id ? 'text-green-600' : ''}`} />
+                {tab.id === 'bookings' && activeTab !== 'bookings' && bookingBadgeCount > 0 && (
+                  <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    {bookingBadgeCount > 9 ? '9+' : bookingBadgeCount}
+                  </div>
+                )}
+              </button>
+            );
+          })}
+        </nav>
+      </div>
      </div>
    );
  }

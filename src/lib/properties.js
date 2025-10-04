@@ -390,8 +390,10 @@ export const getPropertiesForFeed = async (filters = {}, page = 1, limitCount = 
     const querySnapshot = await getDocs(q);
     
     const properties = [];
-    querySnapshot.forEach((doc) => {
-      const propertyData = { ...doc.data(), id: doc.id };
+    const ownerContactPromises = [];
+    
+    querySnapshot.forEach((docSnap) => {
+      const propertyData = { ...docSnap.data(), id: docSnap.id };
       
       // Apply JavaScript-based filtering to avoid Firestore index issues
       let shouldInclude = true;
@@ -436,13 +438,50 @@ export const getPropertiesForFeed = async (filters = {}, page = 1, limitCount = 
       
       if (shouldInclude) {
         properties.push(propertyData);
+        
+        // Fetch owner contact information
+        if (propertyData.ownerId) {
+          ownerContactPromises.push(
+            getDoc(doc(db, 'users', propertyData.ownerId))
+              .then(ownerDoc => {
+                if (ownerDoc.exists()) {
+                  const ownerData = ownerDoc.data();
+                  return {
+                    propertyId: propertyData.id,
+                    ownerName: ownerData.name || 'Owner',
+                    ownerPhone: ownerData.phone || null,
+                    ownerEmail: ownerData.email || null
+                  };
+                }
+                return null;
+              })
+              .catch(() => null)
+          );
+        }
       }
+    });
+
+    // Wait for all owner contact fetches to complete
+    const ownerContacts = await Promise.all(ownerContactPromises);
+    
+    // Merge owner contact information with properties
+    const propertiesWithOwnerContact = properties.map(property => {
+      const ownerContact = ownerContacts.find(contact => 
+        contact && contact.propertyId === property.id
+      );
+      
+      return {
+        ...property,
+        ownerName: ownerContact?.ownerName || 'Owner',
+        ownerPhone: ownerContact?.ownerPhone || null,
+        ownerEmail: ownerContact?.ownerEmail || null
+      };
     });
 
     return {
       success: true,
-      properties,
-      total: properties.length
+      properties: propertiesWithOwnerContact,
+      total: propertiesWithOwnerContact.length
     };
   } catch (error) {
     console.error('Get properties for feed error:', error);

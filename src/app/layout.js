@@ -15,6 +15,7 @@ const geistMono = Geist_Mono({
 export const metadata = {
   title: "PG Finder - Find Your Perfect Paying Guest Accommodation",
   description: "Discover the best paying guest accommodations near you with our comprehensive PG finder app. Find affordable, comfortable, and convenient PG options.",
+  viewport: "width=device-width, initial-scale=1",
 };
 
 export default function RootLayout({ children }) {
