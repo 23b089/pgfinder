@@ -13,6 +13,7 @@ export default function OwnerDashboard() {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
+  const [bookingBadgeCount, setBookingBadgeCount] = useState(0);
 
   // Load owner's PGs on component mount and when component updates
   useEffect(() => {
@@ -35,7 +36,10 @@ export default function OwnerDashboard() {
             // Load bookings
             const bookingsResult = await getOwnerBookings(userResult.user.id);
             if (bookingsResult.success) {
-              setBookings(bookingsResult.bookings);
+              const list = bookingsResult.bookings || [];
+              setBookings(list);
+              const pending = list.filter(b => ((b.status || '') + '').toLowerCase() === 'pending').length;
+              setBookingBadgeCount(pending);
             }
           } catch (error) {
             console.error('Error loading data:', error);
@@ -151,7 +155,12 @@ export default function OwnerDashboard() {
       if (res.success) {
         alert('Booking accepted');
         const bookingsResult = await getOwnerBookings(userResult.user.id);
-        if (bookingsResult.success) setBookings(bookingsResult.bookings);
+        if (bookingsResult.success) {
+          const list = bookingsResult.bookings || [];
+          setBookings(list);
+          const pending = list.filter(b => ((b.status || '') + '').toLowerCase() === 'pending').length;
+          setBookingBadgeCount(pending);
+        }
       } else {
         alert('Failed to accept booking: ' + (res.error || 'Unknown error'));
       }
@@ -171,7 +180,12 @@ export default function OwnerDashboard() {
       if (res.success) {
         alert('Booking rejected');
         const bookingsResult = await getOwnerBookings(userResult.user.id);
-        if (bookingsResult.success) setBookings(bookingsResult.bookings);
+        if (bookingsResult.success) {
+          const list = bookingsResult.bookings || [];
+          setBookings(list);
+          const pending = list.filter(b => ((b.status || '') + '').toLowerCase() === 'pending').length;
+          setBookingBadgeCount(pending);
+        }
       } else {
         alert('Failed to reject booking: ' + (res.error || 'Unknown error'));
       }
@@ -253,7 +267,12 @@ export default function OwnerDashboard() {
             ].map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  if (tab.id === 'bookings') {
+                    setBookingBadgeCount(0);
+                  }
+                }}
                 className={`flex items-center px-4 py-4 border-b-2 font-medium text-sm transition-colors ${
                   activeTab === tab.id
                     ? 'border-green-500 text-green-600'
@@ -261,7 +280,12 @@ export default function OwnerDashboard() {
                 }`}
               >
                 <tab.icon className="w-4 h-4 mr-2" />
-                {tab.label}
+                <span className="flex items-center gap-2">
+                  {tab.label}
+                  {tab.id === 'bookings' && activeTab !== 'bookings' && bookingBadgeCount > 0 && (
+                    <span className="text-xs bg-red-500 text-white px-2 py-0.5 rounded-full">{bookingBadgeCount}</span>
+                  )}
+                </span>
               </button>
             ))}
           </div>

@@ -185,8 +185,36 @@ export default function UserDashboard() {
       return;
     }
 
-    // Always route through OTP phone verification flow
-    router.push(`/pgs/${pg.id}/book`);
+    // Create booking directly (OTP removed)
+    try {
+      const occupants = 1;
+      const data = {
+        userId: currentUser.id,
+        userName: currentUser.name || currentUser.displayName || currentUser.email,
+        propertyId: pg.id,
+        propertyName: pg.pgName || pg.name,
+        ownerId: pg.ownerId,
+        location: pg.location,
+        roomType: pg.roomType || pg.sharingType,
+        occupants,
+        rentAmount: pg.price,
+        checkIn: new Date().toISOString().split('T')[0],
+        checkOut: null
+      };
+      const res = await createBooking(data);
+      if (res.success) {
+        alert('Booking request sent!');
+        setActiveTab('bookings');
+        // Reload bookings
+        const bookingsResult = await getUserBookings(currentUser.id);
+        if (bookingsResult.success) setBookings(bookingsResult.bookings);
+      } else {
+        alert(res.error || 'Failed to create booking');
+      }
+    } catch (err) {
+      console.error('Direct booking error:', err);
+      alert('Failed to create booking');
+    }
   };
 
   const handleLogout = () => {
@@ -398,7 +426,24 @@ export default function UserDashboard() {
                 return (
                   <button
                     key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
+                    onClick={() => {
+                      setActiveTab(tab.id);
+                      if (tab.id === 'notifications') {
+                        setUnreadCount(0);
+                        (async () => {
+                          try {
+                            if (!currentUser) return;
+                            const { markAllNotificationsAsRead } = await import('@/lib/bookings');
+                            const res = await markAllNotificationsAsRead(currentUser.id);
+                            if (res.success) {
+                              setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+                            }
+                          } catch (err) {
+                            console.error('Mark all read on tab open failed:', err);
+                          }
+                        })();
+                      }
+                    }}
                     className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 transition-colors ${
                       activeTab === tab.id
                         ? 'border-indigo-500 text-indigo-600'
@@ -408,9 +453,7 @@ export default function UserDashboard() {
                     <Icon className="w-4 h-4" />
                     <span className="flex items-center gap-2">
                       <span>{tab.name}</span>
-                      {tab.id === 'notifications' && unreadCount > 0 && (
-                        <span className="text-xs bg-red-500 text-white px-2 py-0.5 rounded-full">{unreadCount}</span>
-                      )}
+                      {/* Notification badge removed per request */}
                     </span>
                   </button>
                 );
